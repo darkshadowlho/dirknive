@@ -23,8 +23,8 @@ It will resulted good notes inside splitted or exclution folder with size of the
 
 ### Added Option
 ```
--f => name of folder, the default value is base path of source folder 
--n => number of character after name of splitted or exclution folder. Default value is using my formula haha.
+-f [name_folder] => name of folder, the default value is base path of source folder 
+-n [num_char_folder] => number of character after name of splitted or exclution folder. Default value is using my formula haha.
 ---dont_keep_structure => if you want all file doesn't have root folder
 ```
 
