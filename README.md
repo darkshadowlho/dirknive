@@ -33,9 +33,9 @@ It will resulted good notes inside splitted or exclution folder with size of the
 python dirknive-type.py -i [source_folder] -o [destination_folder]
 ```
 ### Added Option
-```
----dont_keep_structure => if you want all file doesn't have root folder
-'''
+
+`---dont_keep_structure => if you want all file doesn't have root folder`
+
 
 
 
