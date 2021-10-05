@@ -54,7 +54,10 @@ def copy_good(src_path, dst_path):
     back_dst_path = dst_path.replace('\\'+os.path.basename(dst_path),'')
     if not os.path.isdir(back_dst_path):
         os.makedirs(back_dst_path, exist_ok=True)
-    shutil.copy(src_path,back_dst_path)
+    if os.path.isfile(src_path):
+        shutil.copy(src_path,back_dst_path)
+    else:
+        print('Sorry, the file is doesnt exist anymore')
 
 ## Function to read the arguments
 def get_args():
