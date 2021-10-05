@@ -10,5 +10,11 @@ cd dirknive
 ## Apply some changes.
 ```
 
-Commit to your repository and merge it in this repository. 
+Commit to your repository and merge it in this repository.
+
+```
+git add .
+git commit -m "your commit"
+git push origin "your branch right now"
+```
 
