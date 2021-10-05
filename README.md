@@ -10,7 +10,7 @@
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######
 ```
 
-The Default command is
+For size version, the command is : 
 ```
 python dirknive.py -i [source_folder] -o [destination_folder] -s [size split folder in MB unit]
 ```
@@ -27,5 +27,16 @@ It will resulted good notes inside splitted or exclution folder with size of the
 -n [num_char_folder] => number of character after name of splitted or exclution folder. Default value is using my formula haha.
 ---dont_keep_structure => if you want all file doesn't have root folder
 ```
+
+For type version, the command is : 
+```
+python dirknive-type.py -i [source_folder] -o [destination_folder]
+```
+### Added Option
+```
+---dont_keep_structure => if you want all file doesn't have root folder
+'''
+
+
 
 
