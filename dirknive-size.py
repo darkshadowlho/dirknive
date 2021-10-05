@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import argparse
 
@@ -54,10 +55,10 @@ def copy_good(src_path, dst_path):
     back_dst_path = dst_path.replace('/'+os.path.basename(dst_path),'')
     if not os.path.isdir(back_dst_path):
         os.makedirs(back_dst_path, exist_ok=True)
-    if os.path.isfile(src_path):
+    if os.path.isfile(src_path) and not os.path.isfile(dst_path):
         shutil.copy(src_path,back_dst_path)
     else:
-        print('Sorry, the file is doesnt exist anymore')
+        print('Sorry, the source file is doesnt exist or destination file already copied')
 
 ## Function to read the arguments
 def get_args():
@@ -73,15 +74,15 @@ def get_args():
 
 ## Main Function
 def split_est_dir(opt):
-    opt.input.replace('\\','/')
-    opt.output.replace('\\','/')
+    opt.input = opt.input.replace('\\','/')
+    opt.output = opt.output.replace('\\','/')
     if not os.path.isdir(opt.output):
         os.makedirs(opt.output)
     ## Making name of the split folder
     if opt.name:
         name_dest_dir = opt.name
     else:
-        name_dest_dir = os.path.basename(opt.output)
+        name_dest_dir = os.path.basename(opt.input)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
         ## Store the size of directory input
@@ -99,22 +100,23 @@ def split_est_dir(opt):
         excl_num = 1
         size_total = 0
         ## store last file to new variable
-        last_src_dir = listing_file(opt.input)[-1]
+        last_src_dir = listing_file(opt.input)[-1].replace('\\','/')
         for ev_file in listing_file(opt.input):
+            ev_file = ev_file.replace('\\','/')
             ## if parser is set, it will remove the folder structure
             if opt.dont_keep_structure:
                 back_path = '/'+os.path.basename(ev_file)
             else:
-                back_path = ev_file.replace(opt.input, '')
+                back_path = ev_file.replace(opt.input, '').replace('\\','/')
             ## Settings for file that have size more than size limit
             if chk_size(ev_file) >= opt.size_limit:
-                content = []
                 name_excl = name_dest_dir+'_exclution'+num_dir % (excl_num)
                 target_path = opt.output+'/'+name_excl+back_path
                 copy_good(ev_file,target_path)
                 ## counting size total
                 size_total += chk_size(ev_file)
-                print('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                ## Hope someday can be implemented
+                ## print('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
                 ## Writing Text Files
                 fp = open(opt.output+'/'+name_excl+'/'+name_excl+'.txt', 'w', encoding='utf-8')
                 fp.write('Operation in '+name_excl+' :\n\n'+ev_file+' is transferred to '+target_path)
@@ -125,8 +127,9 @@ def split_est_dir(opt):
                 ## For the first file that make sum more than size limit
                 if (size_split_dir + chk_size(ev_file) >= opt.size_limit):
                     ## Counting Size Total
-                    size_total += size_split_dir
-                    print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                    size_total += chk_size(ev_file)
+                    ## Hope someday can be implemented
+                    ## print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
                     ## Writing to text file
                     write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
                     ## initiate the beginning again
@@ -134,6 +137,7 @@ def split_est_dir(opt):
                     split_num += 1
                     temp_split_dir = []
                 else:
+                    size_total += chk_size(ev_file)
                     size_split_dir += chk_size(ev_file)
                 name_split = name_dest_dir+'_split'+num_dir % (split_num)
                 target_path = opt.output+'/'+name_split+back_path
@@ -143,9 +147,15 @@ def split_est_dir(opt):
                 if (ev_file==last_src_dir):
                     ## Counting Size Total
                     size_total += size_split_dir
-                    print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                    ## Hope someday can be implemented
+                    ## print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
                     ## Writing to text files
                     write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
+            ## Print progress
+            prog = size_total/src_size*40
+            sys.stdout.write('\r')
+            sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+            sys.stdout.flush()
     else:
         print('I am sorry, dirknive-size only work on directory')
 
@@ -161,7 +171,8 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Size Version -------------------------")
+------------------- Size Version ------------------------- \n\
+Progress : \n")
     opt = get_args()
     split_est_dir(opt)
 
