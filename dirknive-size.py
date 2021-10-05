@@ -81,7 +81,7 @@ def split_est_dir(opt):
     if opt.name:
         name_dest_dir = opt.name
     else:
-        name_dest_dir = os.path.basename(opt.output)
+        name_dest_dir = os.path.basename(opt.input)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
         ## Store the size of directory input
