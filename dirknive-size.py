@@ -41,7 +41,7 @@ def add_ndir(pth_dir, inner):
 
 ## Function to make txt in split folder only
 def write_temp(dst_dir, name, list_opr, size_dir):
-    fps = open(dst_dir+'\\'+name+'\\'+name+'.txt', 'w', encoding='utf-8')
+    fps = open(dst_dir+'/'+name+'/'+name+'.txt', 'w', encoding='utf-8')
     opr_list = add_ndir(name, list_opr)
     fps.write('Operation in '+opr_list['name']+' :')
     for i in opr_list['contents']:
@@ -51,7 +51,7 @@ def write_temp(dst_dir, name, list_opr, size_dir):
 
 ## Function to copy file if the destination directory isn't exist
 def copy_good(src_path, dst_path):
-    back_dst_path = dst_path.replace('\\'+os.path.basename(dst_path),'')
+    back_dst_path = dst_path.replace('/'+os.path.basename(dst_path),'')
     if not os.path.isdir(back_dst_path):
         os.makedirs(back_dst_path, exist_ok=True)
     if os.path.isfile(src_path):
@@ -73,6 +73,8 @@ def get_args():
 
 ## Main Function
 def split_est_dir(opt):
+    opt.input.replace('\\','/')
+    opt.output.replace('\\','/')
     if not os.path.isdir(opt.output):
         os.makedirs(opt.output)
     ## Making name of the split folder
@@ -101,20 +103,20 @@ def split_est_dir(opt):
         for ev_file in listing_file(opt.input):
             ## if parser is set, it will remove the folder structure
             if opt.dont_keep_structure:
-                back_path = '\\'+os.path.basename(ev_file)
+                back_path = '/'+os.path.basename(ev_file)
             else:
                 back_path = ev_file.replace(opt.input, '')
             ## Settings for file that have size more than size limit
             if chk_size(ev_file) >= opt.size_limit:
                 content = []
                 name_excl = name_dest_dir+'_exclution'+num_dir % (excl_num)
-                target_path = opt.output+'\\'+name_excl+back_path
+                target_path = opt.output+'/'+name_excl+back_path
                 copy_good(ev_file,target_path)
                 ## counting size total
                 size_total += chk_size(ev_file)
                 print('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
                 ## Writing Text Files
-                fp = open(opt.output+'\\'+name_excl+'\\'+name_excl+'.txt', 'w', encoding='utf-8')
+                fp = open(opt.output+'/'+name_excl+'/'+name_excl+'.txt', 'w', encoding='utf-8')
                 fp.write('Operation in '+name_excl+' :\n\n'+ev_file+' is transferred to '+target_path)
                 fp.write('\n\nThe Folder Size is '+'%.3f%s' % (chk_size(ev_file),' MB'))
                 fp.close()
@@ -134,7 +136,7 @@ def split_est_dir(opt):
                 else:
                     size_split_dir += chk_size(ev_file)
                 name_split = name_dest_dir+'_split'+num_dir % (split_num)
-                target_path = opt.output+'\\'+name_split+back_path
+                target_path = opt.output+'/'+name_split+back_path
                 copy_good(ev_file,target_path)
                 temp_split_dir.append(add_inner(ev_file, target_path))
                 ## For the last file but the sum still lower than size limit
