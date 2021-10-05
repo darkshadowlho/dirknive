@@ -10,7 +10,7 @@
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######
 ```
 
-For size version, the command is : 
+## For `size version`, the command is : 
 ```
 python dirknive.py -i [source_folder] -o [destination_folder] -s [size split folder in MB unit]
 ```
@@ -28,7 +28,7 @@ It will resulted good notes inside splitted or exclution folder with size of the
 ---dont_keep_structure => if you want all file doesn't have root folder
 ```
 
-For type version, the command is : 
+## For `type version`, the command is : 
 ```
 python dirknive-type.py -i [source_folder] -o [destination_folder]
 ```
