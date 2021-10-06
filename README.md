@@ -12,7 +12,7 @@
 
 The Default command is
 ```
-python dirknive.py -i [source_folder] -o [destination_folder] -s [size split folder in MB unit]
+python dirknive-size.py -i [source_folder] -o [destination_folder] -s [size split folder in MB unit]
 ```
 
 ### What if size of file more than size split folder ?
