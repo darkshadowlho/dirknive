@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import colorama
 import argparse
 
 ## Function to check path is link or not in windows
@@ -99,9 +100,22 @@ def split_est_dir(opt):
         size_split_dir = 0
         excl_num = 1
         size_total = 0
+        ## Begin colorama
+        colorama.init()
         ## store last file to new variable
         last_src_dir = listing_file(opt.input)[-1].replace('\\','/')
         for ev_file in listing_file(opt.input):
+            ## Initiation for print progress
+            col = shutil.get_terminal_size().columns
+            sentence = 'Transferring '+ev_file
+            ## Count upchar is rather hard
+            up_char = int(-(-len(sentence)//col))
+            if (len(sentence)%col == 0):
+                up_char += 1
+            ## Counting Progress
+            prog = size_total/src_size*40
+            print(sentence)
+            sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
             ev_file = ev_file.replace('\\','/')
             ## if parser is set, it will remove the folder structure
             if opt.dont_keep_structure:
@@ -115,8 +129,10 @@ def split_est_dir(opt):
                 copy_good(ev_file,target_path)
                 ## counting size total
                 size_total += chk_size(ev_file)
-                ## Hope someday can be implemented
-                ## print('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                ## Printing progress of sum
+                sys.stdout.write('\r'+'\033[A'*up_char+' '*col+'\033[A')
+                print('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                sys.stdout.write('\n'*up_char)
                 ## Writing Text Files
                 fp = open(opt.output+'/'+name_excl+'/'+name_excl+'.txt', 'w', encoding='utf-8')
                 fp.write('Operation in '+name_excl+' :\n\n'+ev_file+' is transferred to '+target_path)
@@ -126,10 +142,12 @@ def split_est_dir(opt):
             else:
                 ## For the first file that make sum more than size limit
                 if (size_split_dir + chk_size(ev_file) >= opt.size_limit):
+                    ## Printing progress of sum
+                    sys.stdout.write('\r'+'\033[A'*up_char+' '*col+'\033[A')
+                    print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                    sys.stdout.write('\n'*up_char)
                     ## Counting Size Total
                     size_total += chk_size(ev_file)
-                    ## Hope someday can be implemented
-                    ## print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
                     ## Writing to text file
                     write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
                     ## initiate the beginning again
@@ -146,16 +164,21 @@ def split_est_dir(opt):
                 ## For the last file but the sum still lower than size limit
                 if (ev_file==last_src_dir):
                     ## Counting Size Total
-                    size_total += size_split_dir
-                    ## Hope someday can be implemented
-                    ## print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                    size_total += chk_size(ev_file)
+                    ## Printing progress of sum
+                    sys.stdout.write('\r'+'\033[A'*up_char+' '*col+'\033[A')
+                    print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
+                    sys.stdout.write('\n'*up_char)
                     ## Writing to text files
                     write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
-            ## Print progress
-            prog = size_total/src_size*40
+            ## Clearing after print progress
             sys.stdout.write('\r')
-            sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+            for j in range(up_char+1):
+                sys.stdout.write(' '*col+'\033[A'*2)
             sys.stdout.flush()
+            print()
+        print('Operation is done, Thanks for using Dirknive')
+        sys.stdout.write("[%-40s] %d%%" % ('='*40, 100))
     else:
         print('I am sorry, dirknive-size only work on directory')
 
