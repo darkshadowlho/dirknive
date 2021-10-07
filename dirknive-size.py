@@ -17,6 +17,14 @@ def chk_size(path):
         if not is_nt_link(path):
             return os.stat(path).st_size/(1024**2)
 
+## Function to be able print in the middle of process
+def print_middle(str_test,upchar):
+    co = shutil.get_terminal_size().columns
+    sys.stdout.write('\r'+'\033[A'*upchar+' '*co+'\033[A')
+    print(str_test)
+    sys.stdout.write('\n'*upchar)
+    sys.stdout.flush()
+
 ## Function to make list of file from path
 def listing_file(pth_dir):
     try :
@@ -38,28 +46,24 @@ def listing_file(pth_dir):
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
 
-def add_ndir(pth_dir, inner):
-    return {'name' : pth_dir, 'contents' : inner}
-
 ## Function to make txt in split folder only
 def write_temp(dst_dir, name, list_opr, size_dir):
     fps = open(dst_dir+'/'+name+'/'+name+'.txt', 'w', encoding='utf-8')
-    opr_list = add_ndir(name, list_opr)
-    fps.write('Operation in '+opr_list['name']+' :')
-    for i in opr_list['contents']:
+    fps.write('Operation in '+name+' :')
+    for i in list_opr:
         fps.write('\n\n'+i['src_path']+' is transfered to '+i['dest_path'])
     fps.write('\n\nThe Folder Size is '+'%.3f%s' % (size_dir,' MB'))
     fps.close()
 
 ## Function to copy file if the destination directory isn't exist
-def copy_good(src_path, dst_path):
+def copy_good(src_path, dst_path, upchar):
     back_dst_path = dst_path.replace('/'+os.path.basename(dst_path),'')
     if not os.path.isdir(back_dst_path):
         os.makedirs(back_dst_path, exist_ok=True)
     if os.path.isfile(src_path) and not os.path.isfile(dst_path):
         shutil.copy(src_path,back_dst_path)
     else:
-        print('Sorry, the source file is doesnt exist or destination file already copied')
+        print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
 
 ## Function to read the arguments
 def get_args():
@@ -105,6 +109,7 @@ def split_est_dir(opt):
         ## store last file to new variable
         last_src_dir = listing_file(opt.input)[-1].replace('\\','/')
         for ev_file in listing_file(opt.input):
+            ev_file = ev_file.replace('\\','/')
             ## Initiation for print progress
             col = shutil.get_terminal_size().columns
             sentence = 'Transferring '+ev_file
@@ -114,9 +119,6 @@ def split_est_dir(opt):
                 up_char += 1
             ## Counting Progress
             prog = size_total/src_size*40
-            print(sentence)
-            sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
-            ev_file = ev_file.replace('\\','/')
             ## if parser is set, it will remove the folder structure
             if opt.dont_keep_structure:
                 back_path = '/'+os.path.basename(ev_file)
@@ -126,13 +128,15 @@ def split_est_dir(opt):
             if chk_size(ev_file) >= opt.size_limit:
                 name_excl = name_dest_dir+'_exclution'+num_dir % (excl_num)
                 target_path = opt.output+'/'+name_excl+back_path
-                copy_good(ev_file,target_path)
+                ## Print progress
+                print(sentence)
+                sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+                ## Doing Copy Job
+                copy_good(ev_file,target_path,up_char)
+                ## Printing progress of sum
+                print_middle('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size), up_char)
                 ## counting size total
                 size_total += chk_size(ev_file)
-                ## Printing progress of sum
-                sys.stdout.write('\r'+'\033[A'*up_char+' '*col+'\033[A')
-                print('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
-                sys.stdout.write('\n'*up_char)
                 ## Writing Text Files
                 fp = open(opt.output+'/'+name_excl+'/'+name_excl+'.txt', 'w', encoding='utf-8')
                 fp.write('Operation in '+name_excl+' :\n\n'+ev_file+' is transferred to '+target_path)
@@ -143,9 +147,7 @@ def split_est_dir(opt):
                 ## For the first file that make sum more than size limit
                 if (size_split_dir + chk_size(ev_file) >= opt.size_limit):
                     ## Printing progress of sum
-                    sys.stdout.write('\r'+'\033[A'*up_char+' '*col+'\033[A')
                     print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
-                    sys.stdout.write('\n'*up_char)
                     ## Counting Size Total
                     size_total += chk_size(ev_file)
                     ## Writing to text file
@@ -159,16 +161,18 @@ def split_est_dir(opt):
                     size_split_dir += chk_size(ev_file)
                 name_split = name_dest_dir+'_split'+num_dir % (split_num)
                 target_path = opt.output+'/'+name_split+back_path
-                copy_good(ev_file,target_path)
+                ## Print progress
+                print(sentence)
+                sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+                ## Doing Copy Job
+                copy_good(ev_file,target_path,up_char)
                 temp_split_dir.append(add_inner(ev_file, target_path))
                 ## For the last file but the sum still lower than size limit
                 if (ev_file==last_src_dir):
                     ## Counting Size Total
                     size_total += chk_size(ev_file)
                     ## Printing progress of sum
-                    sys.stdout.write('\r'+'\033[A'*up_char+' '*col+'\033[A')
-                    print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
-                    sys.stdout.write('\n'*up_char)
+                    print_middle('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size), up_char)
                     ## Writing to text files
                     write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
             ## Clearing after print progress
