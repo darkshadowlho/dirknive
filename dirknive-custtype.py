@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import shutil
 import colorama
@@ -57,12 +56,12 @@ def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
 
 ## Function to be able print in the middle of process
-def print_middle(str_test, upchar):
+def print_middle(str_test,upchar):
     co = shutil.get_terminal_size().columns
-    sys.stdout.write('\r'+'\033[A'*upchar+' '*co+'\033[A')
+    print('\033[A'*(upchar+1))
+    print(' '*co+'\033[A',end='')
     print(str_test)
-    sys.stdout.write('\n'*upchar)
-    sys.stdout.flush()
+    print('\n'*(upchar-1))
 
 ## Function to copy file if the destination directory isn't exist
 def copy_good(src_path, dst_path, upchar):
@@ -105,8 +104,7 @@ def split_dir(listtype):
             ## Count the progress
             prog = prog_now/prog_total*40
             print(sentence)
-            sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
-            sys.stdout.flush()
+            print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
             ## if parser is set, it will remove the folder structure
             if opt.dont_keep_structure:
                 back_path = '/'+os.path.basename(ev_file)
@@ -126,13 +124,12 @@ def split_dir(listtype):
                     fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
                 fp.close()
             ## Clearing after print progress
-            sys.stdout.write('\r')
+            print('\033[A')
             for j in range(up_char+1):
-                sys.stdout.write(' '*col+'\033[A'*2)
-            sys.stdout.flush()
+                print(' '*col+'\033[A'*3)
             print()
     print('Operation is done, Thanks for using Dirknive')
-    sys.stdout.write("[%-40s] %d%%" % ('='*40, 100))
+    print("[%-40s] %d%%\033[A" % ('='*40, 100))
 
 ## Main Function
 def split_est_dir(opt):
