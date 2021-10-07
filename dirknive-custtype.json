@@ -1,0 +1,8 @@
+{
+	"Image": ["jpg", "png", "gif", "bmp", "webp"],
+	"Graphic": ["svg", "sif", "psd", "ai"],
+	"Media": ["mp4", "mkv", "srt", "vtt"],
+	"Audio": ["mp3", "m4a", "opus"],
+	"Document": ["pdf", "xlsx", "docx"],
+	"Programs": ["exe", "msi"]
+}

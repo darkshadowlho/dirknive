@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import shutil
 import colorama
 import argparse
@@ -8,39 +9,42 @@ import argparse
 def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
-## Function to make list of file from path
-def list_type(pth_dir):
-    lst_file = {}
-    for inner in os.listdir(pth_dir):
-        inr_chk = os.path.join(pth_dir,inner)
-        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-            extension = inner.split('.')[-1].upper()
-            if inner.split('.')[-1] == inner:
-                if ("OTHER" not in lst_file):
-                    lst_file["OTHER"]=[]
-                lst_file["OTHER"].append(inr_chk)
-            else:
-                if extension not in lst_file:
-                    lst_file[extension] = []
-                lst_file[extension].append(inr_chk)
-        elif not is_nt_link(inr_chk):
-            list_file = list_type(inr_chk)
-            for nm_file in list_file:
-                if nm_file not in lst_file:
-                    lst_file[nm_file]=[]
-                for nmn in list_file[nm_file]:
-                    lst_file[nm_file].append(nmn)
-    return lst_file
+## Function to turn extension to custom type
+def turn_type(ext,json_pth):
+    reslt = 'Other'
+    json_file = open(json_pth)
+    ref_type = json.load(json_file)
+    for ctg in ref_type:
+        if ext.lower() in ref_type[ctg]:
+            reslt = ctg
+    return(reslt)
 
-## Function to be able print in the middle of process
-def print_middle(str_test, upchar):
-    co = shutil.get_terminal_size().columns
-    sys.stdout.write('\r'+'\033[A'*upchar+' '*co+'\033[A')
-    print(str_test)
-    sys.stdout.write('\n'*upchar)
-    sys.stdout.flush()
+## Function to classify file based on arrangemet
+def cust_type(pth_dir, json_pth):
+    def cust_inner(path_dir):
+        lst_file = {}
+        for inner in os.listdir(path_dir):
+            inr_chk = os.path.join(path_dir,inner)
+            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+                end_file = inner.split('.')[-1]
+                category = turn_type(end_file,json_pth)
+                if category not in lst_file:
+                    lst_file[category] = []
+                lst_file[category].append(inr_chk)
+            elif not is_nt_link(inr_chk):
+                list_file = cust_inner(inr_chk)
+                for ctgy in list_file:
+                    if ctgy not in lst_file:
+                        lst_file[ctgy]=[]
+                    for in_file in list_file[ctgy]:
+                        lst_file[ctgy].append(in_file)
+        return lst_file
+    if os.path.isfile(json_pth):
+        return cust_inner(pth_dir)
+    else:
+        print('JSON file doesnt exist')
 
-## Function to count total file for the progress
+## Function to count list of file
 def count_type(reslt):
     tot = 0
     for typ in reslt:
@@ -51,6 +55,14 @@ def count_type(reslt):
 ## Function to make the list of operation
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
+
+## Function to be able print in the middle of process
+def print_middle(str_test, upchar):
+    co = shutil.get_terminal_size().columns
+    sys.stdout.write('\r'+'\033[A'*upchar+' '*co+'\033[A')
+    print(str_test)
+    sys.stdout.write('\n'*upchar)
+    sys.stdout.flush()
 
 ## Function to copy file if the destination directory isn't exist
 def copy_good(src_path, dst_path, upchar):
@@ -67,6 +79,7 @@ def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
     parser.add_argument('--input','-i',type=str,default='',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='',help='Destination for the split folder')
+    parser.add_argument('--json',type=str,default='dirknive-custtype.json',help='Path for json file it can be changed if you want')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
@@ -105,10 +118,10 @@ def split_dir(listtype):
             prog_now += 1
             if (ev_file == last_file):
                 ## Printing progress for one category of extension
-                print_middle('All file with '+extension+' extension already transferred', up_char)
+                print_middle('All file in '+extension+' category already transferred', up_char)
                 ## Writing to text files
                 fp = open(opt.output+'/'+extension+'/'+extension+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in folder that contain file with extension '+extension+' is :')
+                fp.write('Operation in category '+extension+' is :')
                 for i in temp_ext_dir:
                     fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
                 fp.close()
@@ -129,10 +142,11 @@ def split_est_dir(opt):
         os.makedirs(opt.output)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
-        listfiletype = list_type(opt.input)
-        split_dir(listfiletype)
+        listcusttype = cust_type(opt.input,opt.json)
+        if (listcusttype != None):
+            split_dir(listcusttype)
     else:
-        print('I am sorry, dirknive type only work on directory')
+        print('I am sorry, dirknive custom type only work on directory')
 
 ## Execute main function
 if __name__ == '__main__':
@@ -146,9 +160,7 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Type Version ------------------------- \n\
+---------------- Custom Type Version --------------------- \n\
 Progress : \n")
     opt = get_args()
     split_est_dir(opt)
-        
-
