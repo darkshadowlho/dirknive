@@ -41,7 +41,7 @@ python dirknive-type.py -i [source_folder] -o [destination_folder]
 ```
 python dirknive-custtype.py -i [source_folder] -o [destination_folder]
 ```
-This version will split the folder based on custom arrangement on the json file, you can see the example
+This version will split the folder based on custom arrangement on the json file, you can see at this [example](https://github.com/darkshadowlho/dirknive/blob/main/dirknive-custtype.json)
 ### Added Option
 ```
 --json [path of your json file] => if you want to rename the json file.
