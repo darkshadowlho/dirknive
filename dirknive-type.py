@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import colorama
 import argparse
 
 ## Function to check path is link or not in windows
@@ -8,38 +9,58 @@ def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
 ## Function to make list of file from path
-def listing_file(pth_dir):
-    try :
-        content =[]
-        for inner in os.listdir(pth_dir):
-            inr_chk = os.path.join(pth_dir, inner)
-            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-                content.append(inr_chk)
-            elif not is_nt_link(inr_chk):
-                list_file = listing_file(inr_chk)
-                for nm_file in list_file:
-                    content.append(nm_file)
-        return content
-    except NotADirectoryError:
-        if not is_nt_link(path):
-            return [pth_dir]
+def list_type(pth_dir):
+    lst_file = {}
+    for inner in os.listdir(pth_dir):
+        inr_chk = os.path.join(pth_dir,inner)
+        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+            extension = inner.split('.')[-1].upper()
+            if inner.split('.')[-1] == inner:
+                if ("OTHER" not in lst_file):
+                    lst_file["OTHER"]=[]
+                lst_file["OTHER"].append(inr_chk)
+            else:
+                if extension not in lst_file:
+                    lst_file[extension] = []
+                lst_file[extension].append(inr_chk)
+        elif not is_nt_link(inr_chk):
+            list_file = list_type(inr_chk)
+            for nm_file in list_file:
+                if nm_file not in lst_file:
+                    lst_file[nm_file]=[]
+                for nmn in list_file[nm_file]:
+                    lst_file[nm_file].append(nmn)
+    return lst_file
+
+## Function to be able print in the middle of process
+def print_middle(str_test, upchar):
+    co = shutil.get_terminal_size().columns
+    sys.stdout.write('\r'+'\033[A'*upchar+' '*co+'\033[A')
+    print(str_test)
+    sys.stdout.write('\n'*upchar)
+    sys.stdout.flush()
+
+## Function to count total file for the progress
+def count_type(reslt):
+    tot = 0
+    for typ in reslt:
+        for item in reslt[typ]:
+            tot +=1
+    return tot
 
 ## Function to make the list of operation
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
 
-def add_ndir(pth_dir, inner):
-    return {'name' : pth_dir, 'contents' : inner}
-
 ## Function to copy file if the destination directory isn't exist
-def copy_good(src_path, dst_path):
+def copy_good(src_path, dst_path, upchar):
     back_dst_path = dst_path.replace('/'+os.path.basename(dst_path),'')
     if not os.path.isdir(back_dst_path):
         os.makedirs(back_dst_path, exist_ok=True)
     if os.path.isfile(src_path)and not os.path.isfile(dst_path):
         shutil.copy(src_path,back_dst_path)
     else:
-        print('Sorry, the source file is doesnt exist or destination file already copied')
+        print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
 
 ## Function to read the arguments
 def get_args():
@@ -58,31 +79,54 @@ def split_est_dir(opt):
         os.makedirs(opt.output)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
-        ev_file = listing_file(opt.input)
-        for n in range(0,len(ev_file)):
-            ev_file[n] = ev_file[n].replace('\\','/')
-            ## print the progress
-            prog = (n+1)/len(ev_file)*40
-            sys.stdout.write('\r')
-            sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
-            sys.stdout.flush()
-            ## main function
-            if opt.dont_keep_structure:
-                back_path = '/'+os.path.basename(ev_file[n])
-            else:
-                back_path = ev_file[n].replace(opt.input, '').replace('\\','/')
-            fldr_name = ev_file[n].split('.')[-1].upper()
-            target_path = opt.output+'/'+fldr_name+back_path
-            copy_good(ev_file[n], target_path) ## opt.output+'/'+fldr_name+'/'+
-            if not os.path.isfile(opt.output+'/'+fldr_name+'/'+fldr_name+'.txt'):
-                fp = open(opt.output+'/'+fldr_name+'/'+fldr_name+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in '+fldr_name+' :\n\n')
-                fp.write(ev_file[n]+' is transfered to '+target_path+'\n\n')
-                fp.close()
-            else:
-                fp = open(opt.output+'/'+fldr_name+'/'+fldr_name+'.txt', 'a', encoding='utf-8')
-                fp.write(ev_file[n]+' is transfered to '+target_path+'\n\n')
-                fp.close()
+        listfiletype = list_type(opt.input)
+        ## initiation progress
+        prog_now = 0
+        prog_total = count_type(listfiletype)
+        colorama.init()
+        for extension in listfiletype:
+            last_file = listfiletype[extension][-1].replace('\\','/')
+            temp_ext_dir = []
+            for ev_file in listfiletype[extension]:
+                ev_file = ev_file.replace('\\','/')
+                ## Progress initiation
+                col = shutil.get_terminal_size().columns
+                sentence = 'Transferring '+ev_file
+                ## Counting the upchar
+                up_char = int(-(-len(sentence)//col))
+                if (len(sentence)%col == 0):
+                    up_char += 1
+                ## Count the progress
+                prog = prog_now/prog_total*40
+                print(sentence)
+                sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+                sys.stdout.flush()
+                ## if parser is set, it will remove the folder structure
+                if opt.dont_keep_structure:
+                    back_path = '/'+os.path.basename(ev_file)
+                else :
+                    back_path = ev_file.replace(opt.input, '').replace('\\','/')
+                target_path = opt.output+'/'+extension+back_path
+                copy_good(ev_file, target_path, up_char)
+                temp_ext_dir.append(add_inner(ev_file, target_path))
+                prog_now += 1
+                if (ev_file == last_file):
+                    ## Printing progress for one category of extension
+                    print_middle('All file with '+extension+' extension already transferred', up_char)
+                    ## Writing to text files
+                    fp = open(opt.output+'/'+extension+'/'+extension+'.txt', 'w', encoding='utf-8')
+                    fp.write('Operation in folder that contain file with extension '+extension+' is :')
+                    for i in temp_ext_dir:
+                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+                    fp.close()
+                ## Clearing after print progress
+                sys.stdout.write('\r')
+                for j in range(up_char+1):
+                    sys.stdout.write(' '*col+'\033[A'*2)
+                sys.stdout.flush()
+                print()
+        print('Operation is done, Thanks for using Dirknive')
+        sys.stdout.write("[%-40s] %d%%" % ('='*40, 100))
     else:
         print('I am sorry, dirknive-type only work on directory')
 
