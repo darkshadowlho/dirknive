@@ -67,8 +67,8 @@ def copy_good(src_path, dst_path, upchar):
 ## Function to read the arguments
 def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
-    parser.add_argument('--input','-i',type=str,default='',help='Source directory of the split folder')
-    parser.add_argument('--output','-o',type=str,default='',help='Destination for the split folder')
+    parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
+    parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--size_limit','-s',type=int,default=5120,help='The size of the split folder in MB unit')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
