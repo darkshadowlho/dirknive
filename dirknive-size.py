@@ -1,5 +1,4 @@
 import os
-import sys
 import shutil
 import colorama
 import argparse
@@ -20,10 +19,10 @@ def chk_size(path):
 ## Function to be able print in the middle of process
 def print_middle(str_test,upchar):
     co = shutil.get_terminal_size().columns
-    sys.stdout.write('\r'+'\033[A'*upchar+' '*co+'\033[A')
+    print('\033[A'*(upchar+1))
+    print(' '*co+'\033[A',end='')
     print(str_test)
-    sys.stdout.write('\n'*upchar)
-    sys.stdout.flush()
+    print('\n'*(upchar-1))
 
 ## Function to make list of file from path
 def listing_file(pth_dir):
@@ -68,8 +67,8 @@ def copy_good(src_path, dst_path, upchar):
 ## Function to read the arguments
 def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
-    parser.add_argument('--input','-i',type=str,default='',help='Source directory of the split folder')
-    parser.add_argument('--output','-o',type=str,default='',help='Destination for the split folder')
+    parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
+    parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--size_limit','-s',type=int,default=5120,help='The size of the split folder in MB unit')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
@@ -130,7 +129,7 @@ def split_est_dir(opt):
                 target_path = opt.output+'/'+name_excl+back_path
                 ## Print progress
                 print(sentence)
-                sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+                print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
                 ## Doing Copy Job
                 copy_good(ev_file,target_path,up_char)
                 ## Printing progress of sum
@@ -163,7 +162,7 @@ def split_est_dir(opt):
                 target_path = opt.output+'/'+name_split+back_path
                 ## Print progress
                 print(sentence)
-                sys.stdout.write("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog))
+                print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
                 ## Doing Copy Job
                 copy_good(ev_file,target_path,up_char)
                 temp_split_dir.append(add_inner(ev_file, target_path))
@@ -176,13 +175,12 @@ def split_est_dir(opt):
                     ## Writing to text files
                     write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
             ## Clearing after print progress
-            sys.stdout.write('\r')
+            print('\033[A')
             for j in range(up_char+1):
-                sys.stdout.write(' '*col+'\033[A'*2)
-            sys.stdout.flush()
+                print(' '*col+'\033[A'*3)
             print()
         print('Operation is done, Thanks for using Dirknive')
-        sys.stdout.write("[%-40s] %d%%" % ('='*40, 100))
+        print("[%-40s] %d%%\033[A" % ('='*40, 100))
     else:
         print('I am sorry, dirknive-size only work on directory')
 

@@ -7,32 +7,26 @@ import argparse
 def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
-## Function to classify based on extension
-def list_type(pth_dir,np):
+## Function to classify based on sort by os listdir and number
+def list_file(path_dir,amt,lim,np):
     np += 1
     lst_file = {}
-    amt = 0
-    for inner in os.listdir(pth_dir):
-        inr_chk = os.path.join(pth_dir,inner)
+    for inner in os.listdir(path_dir):
+        inr_chk = os.path.join(path_dir,inner)
         if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
             amt += 1
-            extension = inner.split('.')[-1].upper()
-            if inner.split('.')[-1] == inner:
-                if ("OTHER" not in lst_file):
-                    lst_file["OTHER"]=[]
-                lst_file["OTHER"].append(inr_chk)
-            else:
-                if extension not in lst_file:
-                    lst_file[extension] = []
-                lst_file[extension].append(inr_chk)
+            num = int(-(-amt//lim))
+            if num not in lst_file:
+                lst_file[num] = []
+            lst_file[num].append(inr_chk)
         elif not is_nt_link(inr_chk):
-            list_file = list_type(inr_chk,np)
-            for nm_file in list_file:
-                if nm_file not in lst_file:
-                    lst_file[nm_file]=[]
-                for nmn in list_file[nm_file]:
+            ck_file = list_file(inr_chk,amt,lim,np)
+            for nm in ck_file:
+                if nm not in lst_file:
+                    lst_file[nm] = []
+                for fl in ck_file[nm]:
                     amt += 1
-                    lst_file[nm_file].append(nmn)
+                    lst_file[nm].append(fl)
     if np != 1:
         return lst_file
     else:
@@ -65,6 +59,9 @@ def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
+    parser.add_argument('--amount_file','-a',type=int,default=10,help='Amount of file in one folder')
+    parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
+    parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
@@ -75,6 +72,16 @@ def split_dir(listtype):
     prog_now = 0
     prog_total = listtype['amt']
     colorama.init()
+    ## Determine the name of the splitted folder
+    if opt.name:
+        name_dest_dir = opt.name
+    else:
+        name_dest_dir = os.path.basename(opt.input)
+    ## Estimate the number of 0 after name of the folder
+    if opt.amount_char:
+        num_dir = '%0.'+str(opt.amount_char)+'d'
+    else:
+        num_dir = '%0.'+str(len(str(len(listtype['split_list']))))+'d'
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1].replace('\\','/')
         temp_ext_dir = []
@@ -96,16 +103,17 @@ def split_dir(listtype):
                 back_path = '/'+os.path.basename(ev_file)
             else :
                 back_path = ev_file.replace(opt.input, '').replace('\\','/')
-            target_path = opt.output+'/'+key+back_path
+            numdir_name = name_dest_dir+num_dir % (key)
+            target_path = opt.output+'/'+numdir_name+back_path
             copy_good(ev_file, target_path, up_char)
             temp_ext_dir.append(add_inner(ev_file, target_path))
             prog_now += 1
             if (ev_file == last_file):
                 ## Printing progress for one category of extension
-                print_middle('All file with '+key+' extension already transferred', up_char)
+                print_middle('%d %s' % (int(key)*opt.amount_file,' file already transferred'), up_char)
                 ## Writing to text files
-                fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in folder that contain file with extension '+key+' is :')
+                fp = open(opt.output+'/'+numdir_name+'/'+numdir_name+'.txt', 'w', encoding='utf-8')
+                fp.write('Operation in folder '+numdir_name+' is :')
                 for i in temp_ext_dir:
                     fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
                 fp.close()
@@ -125,10 +133,10 @@ def split_est_dir(opt):
         os.makedirs(opt.output)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
-        listfiletype = list_type(opt.input,0)
+        listfiletype = list_file(opt.input,0,opt.amount_file,0)
         split_dir(listfiletype)
     else:
-        print('I am sorry, dirknive type only work on directory')
+        print('I am sorry, dirknive amount only work on directory')
 
 ## Execute main function
 if __name__ == '__main__':
@@ -142,7 +150,7 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Type Version ------------------------- \n\
+------------------- Amount Version ------------------------- \n\
 Progress : \n")
     opt = get_args()
     split_est_dir(opt)
