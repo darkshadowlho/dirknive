@@ -55,6 +55,7 @@ def get_args():
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--json',type=str,default='dirknive-custtype.json',help='Path for json file it can be changed if you want')
+    parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
@@ -105,10 +106,13 @@ def split_dir(listtype):
     ## initiation progress
     prog_now = 0
     prog_total = listtype['amt']
+    ## Print progress
+    print('Progress : \n')
     colorama.init()
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1].replace('\\','/')
-        temp_ext_dir = []
+        if not opt.dont_write_txt:
+            temp_ext_dir = []
         for ev_file in listtype['split_list'][key]:
             ev_file = ev_file.replace('\\','/')
             ## Progress initiation
@@ -129,17 +133,19 @@ def split_dir(listtype):
                 back_path = ev_file.replace(opt.input, '').replace('\\','/')
             target_path = opt.output+'/'+key+back_path
             copy_good(ev_file, target_path, up_char)
-            temp_ext_dir.append(add_inner(ev_file, target_path))
             prog_now += 1
+            if not opt.dont_write_txt:
+                temp_ext_dir.append(add_inner(ev_file, target_path))
             if (ev_file == last_file):
                 ## Printing progress for one custom type category
                 print_middle('All file in '+key+' category already transferred', up_char)
                 ## Writing to text files
-                fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in category '+key+' is :')
-                for i in temp_ext_dir:
-                    fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                fp.close()
+                if not opt.dont_write_txt:
+                    fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
+                    fp.write('Operation in category '+key+' is :')
+                    for i in temp_ext_dir:
+                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+                    fp.close()
             ## Clearing after print progress
             print('\033[A')
             for j in range(up_char+1):
@@ -174,7 +180,6 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
----------------- Custom Type Version --------------------- \n\
-Progress : \n")
+---------------- Custom Type Version --------------------- \n")
     opt = get_args()
     split_est_dir(opt)

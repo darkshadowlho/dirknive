@@ -37,6 +37,7 @@ def get_args():
     parser.add_argument('--amount_file','-a',type=int,default=10,help='Amount of file in one folder')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
+    parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
@@ -77,6 +78,8 @@ def split_dir(listtype):
     ## initiation progress
     prog_now = 0
     prog_total = listtype['amt']
+    ## Print progress
+    print('Progress :\n')
     colorama.init()
     ## Determine the name of the splitted folder
     if opt.name:
@@ -90,7 +93,8 @@ def split_dir(listtype):
         num_dir = '%0.'+str(len(str(len(listtype['split_list']))))+'d'
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1].replace('\\','/')
-        temp_ext_dir = []
+        if not opt.dont_write_txt:
+            temp_ext_dir = []
         for ev_file in listtype['split_list'][key]:
             ev_file = ev_file.replace('\\','/')
             ## Progress initiation
@@ -112,17 +116,19 @@ def split_dir(listtype):
             numdir_name = name_dest_dir+num_dir % (key)
             target_path = opt.output+'/'+numdir_name+back_path
             copy_good(ev_file, target_path, up_char)
-            temp_ext_dir.append(add_inner(ev_file, target_path))
             prog_now += 1
+            if not opt.dont_write_txt:
+                temp_ext_dir.append(add_inner(ev_file, target_path))
             if (ev_file == last_file):
                 ## Printing progress for one category of extension
                 print_middle('%d %s' % (prog_now,' file already transferred'), up_char)
                 ## Writing to text files
-                fp = open(opt.output+'/'+numdir_name+'/'+numdir_name+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in folder '+numdir_name+' is :')
-                for i in temp_ext_dir:
-                    fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                fp.close()
+                if not opt.dont_write_txt:
+                    fp = open(opt.output+'/'+numdir_name+'/'+numdir_name+'.txt', 'w', encoding='utf-8')
+                    fp.write('Operation in folder '+numdir_name+' is :')
+                    for i in temp_ext_dir:
+                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+                    fp.close()
             ## Clearing after print progress
             print('\033[A')
             for j in range(up_char+1):
@@ -156,8 +162,7 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Amount Version ------------------------- \n\
-Progress : \n")
+------------------- Amount Version ----------------------- \n")
     opt = get_args()
     split_est_dir(opt)
         

@@ -55,6 +55,7 @@ def get_args():
     parser.add_argument('--size_limit','-s',type=int,default=5120,help='The size of the split folder in MB unit')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
+    parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
@@ -123,6 +124,8 @@ def split_dir(listtype):
     ## initiation progress
     prog_now = 0
     prog_total = listtype['tot_sz']
+    ## Print progress started
+    print('Progress :\n')
     colorama.init()
     ## Determine the name of the splitted folder
     if opt.name:
@@ -136,8 +139,10 @@ def split_dir(listtype):
         num_dir = '%0.'+str(len(str(len(listtype['split_list']))))+'d'
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1][1].replace('\\','/')
-        temp_ext_dir = []
-        split_sum = 0
+        ## Check option for dont_write_txt
+        if not opt.dont_write_txt:
+            temp_ext_dir = []
+            split_sum = 0
         for ev_file in listtype['split_list'][key]:
             ev_file[1] = ev_file[1].replace('\\','/')
             ## Progress initiation
@@ -163,19 +168,21 @@ def split_dir(listtype):
                 dirsz_name = name_dest_dir+'_split'+num_dir % (int(key[1:]))
             target_path = opt.output+'/'+dirsz_name+back_path
             copy_good(ev_file[1], target_path, up_char)
-            temp_ext_dir.append(add_inner(ev_file[1], target_path))
             prog_now += ev_file[0]
-            split_sum += ev_file[0]
+            if not opt.dont_write_txt:
+                temp_ext_dir.append(add_inner(ev_file[1], target_path))
+                split_sum += ev_file[0]
             if (ev_file[1] == last_file):
                 ## Printing progress for one category of extension
                 print_middle('The sum size until '+dirsz_name+' %s %.3f %s [%.2f%%]' % ('is',prog_now,'MB',prog_now/prog_total*100), up_char)
                 ## Writing to text files
-                fp = open(opt.output+'/'+dirsz_name+'/'+dirsz_name+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in folder '+dirsz_name+' is :')
-                for i in temp_ext_dir:
-                    fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',split_sum,'MB'))
-                fp.close()
+                if not opt.dont_write_txt:
+                    fp = open(opt.output+'/'+dirsz_name+'/'+dirsz_name+'.txt', 'w', encoding='utf-8')
+                    fp.write('Operation in folder '+dirsz_name+' is :')
+                    for i in temp_ext_dir:
+                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+                    fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',split_sum,'MB'))
+                    fp.close()
             ## Clearing after print progress
             print('\033[A')
             for j in range(up_char+1):
@@ -209,8 +216,7 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Size Version ------------------------- \n\
-Progress : \n")
+------------------- Size Version ------------------------- \n")
     opt = get_args()
     split_est_dir(opt)
 
