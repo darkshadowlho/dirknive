@@ -7,31 +7,6 @@ import argparse
 def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
-## Function to classify based on sort by os listdir and number
-def list_file(path_dir,amt,lim,np):
-    np += 1
-    lst_file = {}
-    for inner in os.listdir(path_dir):
-        inr_chk = os.path.join(path_dir,inner)
-        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-            amt += 1
-            num = int(-(-amt//lim))
-            if num not in lst_file:
-                lst_file[num] = []
-            lst_file[num].append(inr_chk)
-        elif not is_nt_link(inr_chk):
-            ck_file = list_file(inr_chk,amt,lim,np)
-            for nm in ck_file:
-                if nm not in lst_file:
-                    lst_file[nm] = []
-                for fl in ck_file[nm]:
-                    amt += 1
-                    lst_file[nm].append(fl)
-    if np != 1:
-        return lst_file
-    else:
-        return {'amt' : amt, 'split_list' : lst_file}
-
 ## Function to be able print in the middle of process
 def print_middle(str_test,upchar):
     co = shutil.get_terminal_size().columns
@@ -56,7 +31,7 @@ def copy_good(src_path, dst_path, upchar):
 
 ## Function to read the arguments
 def get_args():
-    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
+    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on amount of file')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--amount_file','-a',type=int,default=10,help='Amount of file in one folder')
@@ -66,7 +41,38 @@ def get_args():
     args = parser.parse_args()
     return args
 
-## Function split dir that work on type and custom type version
+## Function to classify based on sort by os listdir and number
+def list_file(path_dir,amt,lim,np):
+    ## initiation for list and loop function detection
+    np += 1
+    lst_file = {}
+    for inner in os.listdir(path_dir):
+        inr_chk = os.path.join(path_dir,inner)
+        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+            ## Count the category based on formula
+            amt += 1
+            num = int(-(-amt//lim))
+            ## Append file to list
+            if num not in lst_file:
+                lst_file[num] = []
+            lst_file[num].append(inr_chk)
+        elif not is_nt_link(inr_chk):
+            ck_file = list_file(inr_chk,amt,lim,np)
+            ## Rewrite the function for file in the folder
+            for nm in ck_file:
+                if nm not in lst_file:
+                    lst_file[nm] = []
+                ## Append file to list
+                for fl in ck_file[nm]:
+                    amt += 1
+                    lst_file[nm].append(fl)
+    ## Useful without count total function
+    if np != 1:
+        return lst_file
+    else:
+        return {'amt' : amt, 'split_list' : lst_file}
+
+## Function split dir that work on amount and size version
 def split_dir(listtype):
     ## initiation progress
     prog_now = 0
@@ -110,7 +116,7 @@ def split_dir(listtype):
             prog_now += 1
             if (ev_file == last_file):
                 ## Printing progress for one category of extension
-                print_middle('%d %s' % (int(key)*opt.amount_file,' file already transferred'), up_char)
+                print_middle('%d %s' % (prog_now,' file already transferred'), up_char)
                 ## Writing to text files
                 fp = open(opt.output+'/'+numdir_name+'/'+numdir_name+'.txt', 'w', encoding='utf-8')
                 fp.write('Operation in folder '+numdir_name+' is :')
@@ -133,8 +139,8 @@ def split_est_dir(opt):
         os.makedirs(opt.output)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
-        listfiletype = list_file(opt.input,0,opt.amount_file,0)
-        split_dir(listfiletype)
+        listam_file = list_file(opt.input,0,opt.amount_file,0)
+        split_dir(listam_file)
     else:
         print('I am sorry, dirknive amount only work on directory')
 

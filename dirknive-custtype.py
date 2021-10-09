@@ -27,39 +27,6 @@ def turn_type(ext,json_pth):
             reslt = ctg
     return(reslt)
 
-## Function to classify file based on arrangemet
-def cust_type(pth_dir, json_pth):
-    np = 0
-    def cust_inner(path_dir, np):
-        np += 1
-        amt = 0
-        lst_file = {}
-        for inner in os.listdir(path_dir):
-            inr_chk = os.path.join(path_dir,inner)
-            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-                amt += 1
-                end_file = inner.split('.')[-1]
-                category = turn_type(end_file,json_pth)
-                if category not in lst_file:
-                    lst_file[category] = []
-                lst_file[category].append(inr_chk)
-            elif not is_nt_link(inr_chk):
-                list_file = cust_inner(inr_chk,np)
-                for ctgy in list_file:
-                    if ctgy not in lst_file:
-                        lst_file[ctgy]=[]
-                    for in_file in list_file[ctgy]:
-                        amt += 1
-                        lst_file[ctgy].append(in_file)
-        if np != 1:
-            return lst_file
-        else:
-            return {'amt' : amt, 'split_list' : lst_file}
-    if is_json(json_pth):
-        return cust_inner(pth_dir,np)
-    else:
-        print('Error when parsing JSON file or doesnt exist')
-
 ## Function to make the list of operation
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
@@ -84,13 +51,54 @@ def copy_good(src_path, dst_path, upchar):
 
 ## Function to read the arguments
 def get_args():
-    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
+    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on custom category of extension')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--json',type=str,default='dirknive-custtype.json',help='Path for json file it can be changed if you want')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
+
+## Function to classify file based on arrangemet
+def cust_type(pth_dir, json_pth):
+    ## initiation for loop function
+    np = 0
+    def cust_inner(path_dir, np):
+        ## initiation inner function
+        np += 1
+        amt = 0
+        lst_file = {}
+        for inner in os.listdir(path_dir):
+            inr_chk = os.path.join(path_dir,inner)
+            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+                ## Classify based on category
+                amt += 1
+                end_file = inner.split('.')[-1]
+                category = turn_type(end_file,json_pth)
+                ## Append file to list
+                if category not in lst_file:
+                    lst_file[category] = []
+                lst_file[category].append(inr_chk)
+            elif not is_nt_link(inr_chk):
+                list_file = cust_inner(inr_chk,np)
+                ## Rewrite function for file in the folder
+                for ctgy in list_file:
+                    if ctgy not in lst_file:
+                        lst_file[ctgy]=[]
+                    ## Append file to the list
+                    for in_file in list_file[ctgy]:
+                        amt += 1
+                        lst_file[ctgy].append(in_file)
+        ## Useful without function to count total
+        if np != 1:
+            return lst_file
+        else:
+            return {'amt' : amt, 'split_list' : lst_file}
+    ## Check if JSON file is valid or not
+    if is_json(json_pth):
+        return cust_inner(pth_dir,np)
+    else:
+        print('Error when parsing JSON file or doesnt exist')
 
 ## Function split dir that work on type and custom type version
 def split_dir(listtype):

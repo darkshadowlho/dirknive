@@ -7,37 +7,6 @@ import argparse
 def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
-## Function to classify based on extension
-def list_type(pth_dir,np):
-    np += 1
-    lst_file = {}
-    amt = 0
-    for inner in os.listdir(pth_dir):
-        inr_chk = os.path.join(pth_dir,inner)
-        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-            amt += 1
-            extension = inner.split('.')[-1].upper()
-            if inner.split('.')[-1] == inner:
-                if ("OTHER" not in lst_file):
-                    lst_file["OTHER"]=[]
-                lst_file["OTHER"].append(inr_chk)
-            else:
-                if extension not in lst_file:
-                    lst_file[extension] = []
-                lst_file[extension].append(inr_chk)
-        elif not is_nt_link(inr_chk):
-            list_file = list_type(inr_chk,np)
-            for nm_file in list_file:
-                if nm_file not in lst_file:
-                    lst_file[nm_file]=[]
-                for nmn in list_file[nm_file]:
-                    amt += 1
-                    lst_file[nm_file].append(nmn)
-    if np != 1:
-        return lst_file
-    else:
-        return {'amt' : amt, 'split_list' : lst_file}
-
 ## Function to be able print in the middle of process
 def print_middle(str_test,upchar):
     co = shutil.get_terminal_size().columns
@@ -62,12 +31,49 @@ def copy_good(src_path, dst_path, upchar):
 
 ## Function to read the arguments
 def get_args():
-    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
+    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on extension of file')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
+
+## Function to classify based on extension
+def list_type(pth_dir,np):
+    ## initiation list and count total file
+    np += 1
+    lst_file = {}
+    amt = 0
+    for inner in os.listdir(pth_dir):
+        inr_chk = os.path.join(pth_dir,inner)
+        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+            ## Operation for file
+            amt += 1
+            extension = inner.split('.')[-1].upper()
+            ## Check if file doesn't have extension will be added to Other
+            if inner.split('.')[-1] == inner:
+                if ("OTHER" not in lst_file):
+                    lst_file["OTHER"]=[]
+                lst_file["OTHER"].append(inr_chk)
+            else:
+                if extension not in lst_file:
+                    lst_file[extension] = []
+                lst_file[extension].append(inr_chk)
+        elif not is_nt_link(inr_chk):
+            list_file = list_type(inr_chk,np)
+            ## Rewrite the function file in the folder
+            for nm_file in list_file:
+                if nm_file not in lst_file:
+                    lst_file[nm_file]=[]
+                ## Append file to list
+                for nmn in list_file[nm_file]:
+                    amt += 1
+                    lst_file[nm_file].append(nmn)
+    ## Useful without make function to count total
+    if np != 1:
+        return lst_file
+    else:
+        return {'amt' : amt, 'split_list' : lst_file}
 
 ## Function split dir that work on type and custom type version
 def split_dir(listtype):
