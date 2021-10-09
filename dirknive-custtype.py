@@ -27,39 +27,6 @@ def turn_type(ext,json_pth):
             reslt = ctg
     return(reslt)
 
-## Function to classify file based on arrangemet
-def cust_type(pth_dir, json_pth):
-    np = 0
-    def cust_inner(path_dir, np):
-        np += 1
-        amt = 0
-        lst_file = {}
-        for inner in os.listdir(path_dir):
-            inr_chk = os.path.join(path_dir,inner)
-            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-                amt += 1
-                end_file = inner.split('.')[-1]
-                category = turn_type(end_file,json_pth)
-                if category not in lst_file:
-                    lst_file[category] = []
-                lst_file[category].append(inr_chk)
-            elif not is_nt_link(inr_chk):
-                list_file = cust_inner(inr_chk,np)
-                for ctgy in list_file:
-                    if ctgy not in lst_file:
-                        lst_file[ctgy]=[]
-                    for in_file in list_file[ctgy]:
-                        amt += 1
-                        lst_file[ctgy].append(in_file)
-        if np != 1:
-            return lst_file
-        else:
-            return {'amt' : amt, 'split_list' : lst_file}
-    if is_json(json_pth):
-        return cust_inner(pth_dir,np)
-    else:
-        print('Error when parsing JSON file or doesnt exist')
-
 ## Function to make the list of operation
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
@@ -84,23 +51,68 @@ def copy_good(src_path, dst_path, upchar):
 
 ## Function to read the arguments
 def get_args():
-    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
+    parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on custom category of extension')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
     parser.add_argument('--json',type=str,default='dirknive-custtype.json',help='Path for json file it can be changed if you want')
+    parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
+
+## Function to classify file based on arrangemet
+def cust_type(pth_dir, json_pth):
+    ## initiation for loop function
+    np = 0
+    def cust_inner(path_dir, np):
+        ## initiation inner function
+        np += 1
+        amt = 0
+        lst_file = {}
+        for inner in os.listdir(path_dir):
+            inr_chk = os.path.join(path_dir,inner)
+            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+                ## Classify based on category
+                amt += 1
+                end_file = inner.split('.')[-1]
+                category = turn_type(end_file,json_pth)
+                ## Append file to list
+                if category not in lst_file:
+                    lst_file[category] = []
+                lst_file[category].append(inr_chk)
+            elif not is_nt_link(inr_chk):
+                list_file = cust_inner(inr_chk,np)
+                ## Rewrite function for file in the folder
+                for ctgy in list_file:
+                    if ctgy not in lst_file:
+                        lst_file[ctgy]=[]
+                    ## Append file to the list
+                    for in_file in list_file[ctgy]:
+                        amt += 1
+                        lst_file[ctgy].append(in_file)
+        ## Useful without function to count total
+        if np != 1:
+            return lst_file
+        else:
+            return {'amt' : amt, 'split_list' : lst_file}
+    ## Check if JSON file is valid or not
+    if is_json(json_pth):
+        return cust_inner(pth_dir,np)
+    else:
+        print('Error when parsing JSON file or doesnt exist')
 
 ## Function split dir that work on type and custom type version
 def split_dir(listtype):
     ## initiation progress
     prog_now = 0
     prog_total = listtype['amt']
+    ## Print progress
+    print('Progress : \n')
     colorama.init()
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1].replace('\\','/')
-        temp_ext_dir = []
+        if not opt.dont_write_txt:
+            temp_ext_dir = []
         for ev_file in listtype['split_list'][key]:
             ev_file = ev_file.replace('\\','/')
             ## Progress initiation
@@ -121,17 +133,19 @@ def split_dir(listtype):
                 back_path = ev_file.replace(opt.input, '').replace('\\','/')
             target_path = opt.output+'/'+key+back_path
             copy_good(ev_file, target_path, up_char)
-            temp_ext_dir.append(add_inner(ev_file, target_path))
             prog_now += 1
+            if not opt.dont_write_txt:
+                temp_ext_dir.append(add_inner(ev_file, target_path))
             if (ev_file == last_file):
                 ## Printing progress for one custom type category
                 print_middle('All file in '+key+' category already transferred', up_char)
                 ## Writing to text files
-                fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in category '+key+' is :')
-                for i in temp_ext_dir:
-                    fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                fp.close()
+                if not opt.dont_write_txt:
+                    fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
+                    fp.write('Operation in category '+key+' is :')
+                    for i in temp_ext_dir:
+                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+                    fp.close()
             ## Clearing after print progress
             print('\033[A')
             for j in range(up_char+1):
@@ -166,7 +180,6 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
----------------- Custom Type Version --------------------- \n\
-Progress : \n")
+---------------- Custom Type Version --------------------- \n")
     opt = get_args()
     split_est_dir(opt)

@@ -24,23 +24,6 @@ def print_middle(str_test,upchar):
     print(str_test)
     print('\n'*(upchar-1))
 
-## Function to make list of file from path
-def listing_file(pth_dir):
-    try :
-        content =[]
-        for inner in os.listdir(pth_dir):
-            inr_chk = os.path.join(pth_dir, inner)
-            if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-                content.append(inr_chk)
-            elif not is_nt_link(inr_chk):
-                list_file = listing_file(inr_chk)
-                for nm_file in list_file:
-                    content.append(nm_file)
-        return content
-    except NotADirectoryError:
-        if not is_nt_link(path):
-            return [pth_dir]
-
 ## Function to make the list of operation
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
@@ -72,9 +55,141 @@ def get_args():
     parser.add_argument('--size_limit','-s',type=int,default=5120,help='The size of the split folder in MB unit')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
+    parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
+
+## Function to classify based on size
+def listszfile(pth_dir,sz_lim,tot_sz,chk_sz,s_n,e_n,np):
+    ## initiation for dict and track num of loop function
+    lst_sz = {}
+    np += 1
+    for inner in os.listdir(pth_dir):
+        inr_chk = os.path.join(pth_dir, inner)
+        ## Condition for file
+        if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
+            f_sz = round(chk_size(inr_chk),4)
+            tot_sz += f_sz
+            ## Check if size of file more than size limit
+            if (f_sz >= sz_lim):
+                e_ns = '%s%d'%('e',e_n)
+                ## Append to list
+                lst_sz[e_ns] = []
+                lst_sz[e_ns].append([f_sz,inr_chk])
+                e_n += 1
+            else:
+                ## Check for the first file that make sum more than size limit
+                if (chk_sz + f_sz >= sz_lim):
+                    chk_sz = f_sz
+                    s_n += 1
+                else:
+                    chk_sz += f_sz
+                s_ns = '%s%d'%('s',s_n)
+                ## Append to list
+                if s_ns not in lst_sz:
+                    lst_sz[s_ns] = []
+                lst_sz[s_ns].append([f_sz,inr_chk])
+        elif not is_nt_link(inr_chk):
+            subfl_lst = listszfile(inr_chk,sz_lim,tot_sz,chk_sz,s_n,e_n,np)
+            for b_fdr in subfl_lst:
+                ## Rewrite program for file more than size limit
+                if b_fdr[0]=='e':
+                    e_n += 1
+                    lst_sz[b_fdr] = []
+                    lst_sz[b_fdr].append(subfl_lst[b_fdr][0])
+                    tot_sz += subfl_lst[b_fdr][0][0]
+                else:
+                    ## Rewrite program for another file
+                    for fl_data in subfl_lst[b_fdr]:
+                        tot_sz += fl_data[0]
+                        ## Checking for first file that make sum more than size limit
+                        if (chk_sz + fl_data[0] >= sz_lim):
+                            chk_sz = fl_data[0]
+                            s_n += 1
+                        else:
+                            chk_sz += fl_data[0]
+                        ## You can move up this below code to up because it don't need key again 
+                        if b_fdr not in lst_sz:
+                            lst_sz[b_fdr] = []
+                        lst_sz[b_fdr].append(fl_data)
+    ## Useful without creating function to count total size
+    if np != 1:
+        return lst_sz
+    else:
+        return {'tot_sz' : round(tot_sz,4), 'split_list' : lst_sz}
+
+## Function split dir that work on amount and size version
+def split_dir(listtype):
+    ## initiation progress
+    prog_now = 0
+    prog_total = listtype['tot_sz']
+    ## Print progress started
+    print('Progress :\n')
+    colorama.init()
+    ## Determine the name of the splitted folder
+    if opt.name:
+        name_dest_dir = opt.name
+    else:
+        name_dest_dir = os.path.basename(opt.input)
+    ## Estimate the number of 0 after name of the folder
+    if opt.amount_char:
+        num_dir = '%0.'+str(opt.amount_char)+'d'
+    else:
+        num_dir = '%0.'+str(len(str(len(listtype['split_list']))))+'d'
+    for key in listtype['split_list']:
+        last_file = listtype['split_list'][key][-1][1].replace('\\','/')
+        ## Check option for dont_write_txt
+        if not opt.dont_write_txt:
+            temp_ext_dir = []
+            split_sum = 0
+        for ev_file in listtype['split_list'][key]:
+            ev_file[1] = ev_file[1].replace('\\','/')
+            ## Progress initiation
+            col = shutil.get_terminal_size().columns
+            sentence = 'Transferring '+ev_file[1]
+            ## Counting the upchar
+            up_char = int(-(-len(sentence)//col))
+            if (len(sentence)%col == 0):
+                up_char += 1
+            ## Count the progress
+            prog = prog_now/prog_total*40
+            print(sentence)
+            print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
+            ## if parser is set, it will remove the folder structure
+            if opt.dont_keep_structure:
+                back_path = '/'+os.path.basename(ev_file[1])
+            else :
+                back_path = ev_file[1].replace(opt.input, '').replace('\\','/')
+            ## Determine split folder name exclution or split
+            if key[0]=='e':
+                dirsz_name = name_dest_dir+'_exclution'+num_dir % (int(key[1:]))
+            else:
+                dirsz_name = name_dest_dir+'_split'+num_dir % (int(key[1:]))
+            target_path = opt.output+'/'+dirsz_name+back_path
+            copy_good(ev_file[1], target_path, up_char)
+            prog_now += ev_file[0]
+            if not opt.dont_write_txt:
+                temp_ext_dir.append(add_inner(ev_file[1], target_path))
+                split_sum += ev_file[0]
+            if (ev_file[1] == last_file):
+                ## Printing progress for one category of extension
+                print_middle('The sum size until '+dirsz_name+' %s %.3f %s [%.2f%%]' % ('is',prog_now,'MB',prog_now/prog_total*100), up_char)
+                ## Writing to text files
+                if not opt.dont_write_txt:
+                    fp = open(opt.output+'/'+dirsz_name+'/'+dirsz_name+'.txt', 'w', encoding='utf-8')
+                    fp.write('Operation in folder '+dirsz_name+' is :')
+                    for i in temp_ext_dir:
+                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+                    fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',split_sum,'MB'))
+                    fp.close()
+            ## Clearing after print progress
+            print('\033[A')
+            for j in range(up_char+1):
+                print(' '*col+'\033[A'*3)
+            print()
+    print('Operation is done, Thanks for using Dirknive')
+    print("[%-40s] %d%%\033[A" % ('='*40, 100))
 
 ## Main Function
 def split_est_dir(opt):
@@ -82,105 +197,10 @@ def split_est_dir(opt):
     opt.output = opt.output.replace('\\','/')
     if not os.path.isdir(opt.output):
         os.makedirs(opt.output)
-    ## Making name of the split folder
-    if opt.name:
-        name_dest_dir = opt.name
-    else:
-        name_dest_dir = os.path.basename(opt.input)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
-        ## Store the size of directory input
-        src_size = chk_size(opt.input)
-        ## Estimate the number of '0' when renaming folder.
-        if opt.amount_char:
-            num_dir = '%0.'+str(opt.amount_char)+'d'
-        else:
-            num_dir = '%0.'+str(len(str(int(-(-(src_size)//opt.size_limit)))))+'d'
-        ## Initiation place to store operation within size limit
-        temp_split_dir = []
-        ## initiation number for [split] and [exclude]
-        split_num = 1
-        size_split_dir = 0
-        excl_num = 1
-        size_total = 0
-        ## Begin colorama
-        colorama.init()
-        ## store last file to new variable
-        last_src_dir = listing_file(opt.input)[-1].replace('\\','/')
-        for ev_file in listing_file(opt.input):
-            ev_file = ev_file.replace('\\','/')
-            ## Initiation for print progress
-            col = shutil.get_terminal_size().columns
-            sentence = 'Transferring '+ev_file
-            ## Count upchar is rather hard
-            up_char = int(-(-len(sentence)//col))
-            if (len(sentence)%col == 0):
-                up_char += 1
-            ## Counting Progress
-            prog = size_total/src_size*40
-            ## if parser is set, it will remove the folder structure
-            if opt.dont_keep_structure:
-                back_path = '/'+os.path.basename(ev_file)
-            else:
-                back_path = ev_file.replace(opt.input, '').replace('\\','/')
-            ## Settings for file that have size more than size limit
-            if chk_size(ev_file) >= opt.size_limit:
-                name_excl = name_dest_dir+'_exclution'+num_dir % (excl_num)
-                target_path = opt.output+'/'+name_excl+back_path
-                ## Print progress
-                print(sentence)
-                print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
-                ## Doing Copy Job
-                copy_good(ev_file,target_path,up_char)
-                ## Printing progress of sum
-                print_middle('The sum size until '+name_excl+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size), up_char)
-                ## counting size total
-                size_total += chk_size(ev_file)
-                ## Writing Text Files
-                fp = open(opt.output+'/'+name_excl+'/'+name_excl+'.txt', 'w', encoding='utf-8')
-                fp.write('Operation in '+name_excl+' :\n\n'+ev_file+' is transferred to '+target_path)
-                fp.write('\n\nThe Folder Size is '+'%.3f%s' % (chk_size(ev_file),' MB'))
-                fp.close()
-                excl_num += 1
-            else:
-                ## For the first file that make sum more than size limit
-                if (size_split_dir + chk_size(ev_file) >= opt.size_limit):
-                    ## Printing progress of sum
-                    print('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size))
-                    ## Counting Size Total
-                    size_total += chk_size(ev_file)
-                    ## Writing to text file
-                    write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
-                    ## initiate the beginning again
-                    size_split_dir = chk_size(ev_file)
-                    split_num += 1
-                    temp_split_dir = []
-                else:
-                    size_total += chk_size(ev_file)
-                    size_split_dir += chk_size(ev_file)
-                name_split = name_dest_dir+'_split'+num_dir % (split_num)
-                target_path = opt.output+'/'+name_split+back_path
-                ## Print progress
-                print(sentence)
-                print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
-                ## Doing Copy Job
-                copy_good(ev_file,target_path,up_char)
-                temp_split_dir.append(add_inner(ev_file, target_path))
-                ## For the last file but the sum still lower than size limit
-                if (ev_file==last_src_dir):
-                    ## Counting Size Total
-                    size_total += chk_size(ev_file)
-                    ## Printing progress of sum
-                    print_middle('The sum size until '+name_split+' is '+'%.3f%s' % (size_total,' MB')+' [{:>.2%}]'.format(size_total/src_size), up_char)
-                    ## Writing to text files
-                    write_temp(opt.output, name_split,temp_split_dir,size_split_dir)
-            ## Clearing after print progress
-            print('\033[A')
-            for j in range(up_char+1):
-                print(' '*col+'\033[A'*3)
-            print()
-        print('Operation is done, Thanks for using Dirknive')
-        print("[%-40s] %d%%\033[A" % ('='*40, 100))
+        listsz_file = listszfile(opt.input,opt.size_limit,0,0,1,1,0)
+        split_dir(listsz_file)
     else:
         print('I am sorry, dirknive-size only work on directory')
 
@@ -196,8 +216,7 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Size Version ------------------------- \n\
-Progress : \n")
+------------------- Size Version ------------------------- \n")
     opt = get_args()
     split_est_dir(opt)
 
