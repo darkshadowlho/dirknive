@@ -23,6 +23,7 @@ The file will be excluded to folder exclution :joy::joy:
 ```
 -f [name_folder] => name of folder, the default value is base path of source folder 
 -n [num_char_folder] => number of character after name of splitted or exclution folder. Default value is using my formula haha.
+--dont_write_txt => if you dont want to write text file that containing list operation and size of folder.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
 
@@ -34,6 +35,7 @@ python dirknive-amount.py -i [source_folder] -o [destination_folder] -a [number 
 ```
 -f [name_folder] => name of folder, the default value is base path of source folder 
 -n [num_char_folder] => number of character after name folder.
+--dont_write_txt => if you dont want to write text file that containing list operation.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
 
@@ -43,6 +45,7 @@ python dirknive-type.py -i [source_folder] -o [destination_folder]
 ```
 ### Added Option
 ```
+--dont_write_txt => if you dont want to write text file that containing list operation.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
 
@@ -54,5 +57,6 @@ This version will split the folder based on custom arrangement on the json file,
 ### Added Option
 ```
 --json [path of your json file] => if you want to rename the json file.
+--dont_write_txt => if you dont want to write text file that containing list operation.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
