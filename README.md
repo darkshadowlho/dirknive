@@ -27,6 +27,19 @@ The file will be excluded to folder exclution :joy::joy:
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
 
+## For `time version`, the command is : :point_down:
+```
+python dirknive-time.py -i [source_folder] -o [destination_folder] -t [type of time(day, weekday, month, year)]
+```
+This option will divide folder based on the recent time file being modified. For detailed result of the split folder operation you can see at python documentation about [datetime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). :joy::kissing_heart:
+
+### Added Option
+```
+-m [modified or created] => created time only work on windows since I am still don't know how to get created time on posix machine. 
+--dont_write_txt => if you dont want to write text file that containing list operation and size of folder.
+--dont_keep_structure => if you want all file doesn't have root folder.
+```
+
 ## For `amount version`, the command is : :point_down:
 ```
 python dirknive-amount.py -i [source_folder] -o [destination_folder] -a [number of file in one folder]
