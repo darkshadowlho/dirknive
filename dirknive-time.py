@@ -1,8 +1,9 @@
 import os
-import colorama
+from datetime import datetime
 import argparse
+import colorama
 
-## Function to check path is link or not in windows
+## Function to check link of folder or files
 def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
@@ -94,68 +95,73 @@ def copy_good(src_path, dst_path):
     else:
         print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
 
+## Function to classify based on time
+def get_date(fl, mod, tm):
+    mod_lst = {'modified' : 'st_mtime', 'created' : 'st_ctime'}
+    tm_lst = {'year' : '%Y','month' : '%B','weekday': '%A','day' : '%d'}
+    if (mod in mod_lst) and (tm in tm_lst):
+        mod_tm = mod_lst[mod]
+        tmn = tm_lst[tm]
+        time_dt = datetime.fromtimestamp(getattr(os.stat(fl),mod_tm))
+        return time_dt.strftime(tmn)
+    else:
+        print('Check input again, error in mode or kind of time')
+
 ## Function to read the arguments
 def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on extension of file')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
+    parser.add_argument('--mode','-m',type=str,default='modified',choices=['created','modified'],help='Mode for get type of time')
+    parser.add_argument('--type','-t',type=str,default='year',choices=['year','month','weekday','day'],help='Mode for time format (year, month, weekday, or day)')
     parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
     parser.add_argument('--dont_keep_structure',default=False,action='store_true',help='Argument to keep the folder structure when doing the operation')
     args = parser.parse_args()
     return args
 
-## Function to classify based on extension
-def list_type(pth_dir,np):
-    ## initiation list and count total file
-    np += 1
-    lst_file = {}
+## Function to classify based on the date
+def lstdatefl(pth_dir,mod,tm,np):
+    lst_tm = {}
     amt = 0
+    np += 1
     for inner in os.listdir(pth_dir):
-        inr_chk = os.path.join(pth_dir,inner)
+        inr_chk = os.path.join(pth_dir, inner)
+        ## Condition for file
         if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
-            ## Operation for file
             amt += 1
-            extension = inner.split('.')[-1].upper()
-            ## Check if file doesn't have extension will be added to Other
-            if inner.split('.')[-1] == inner:
-                if ("OTHER" not in lst_file):
-                    lst_file["OTHER"]=[]
-                lst_file["OTHER"].append(inr_chk)
-            else:
-                if extension not in lst_file:
-                    lst_file[extension] = []
-                lst_file[extension].append(inr_chk)
+            ctgy = get_date(inr_chk,mod,tm)
+            if ctgy not in lst_tm:
+                lst_tm[ctgy] = []
+            lst_tm[ctgy].append(inr_chk)
         elif not is_nt_link(inr_chk):
-            list_file = list_type(inr_chk,np)
-            ## Rewrite the function file in the folder
-            for nm_file in list_file:
-                if nm_file not in lst_file:
-                    lst_file[nm_file]=[]
-                ## Append file to list
-                for nmn in list_file[nm_file]:
+            lsttm = lstdatefl(inr_chk,mod,tm,np)
+            for key in lsttm:
+                if key not in lst_tm:
+                    lst_tm[key] = []
+                for fl in lsttm[key]:
                     amt += 1
-                    lst_file[nm_file].append(nmn)
-    ## Useful without make function to count total
+                    lst_tm[key].append(fl)
+    ## Useful without count total list
     if np != 1:
-        return lst_file
+        return lst_tm
     else:
-        return {'amt' : amt, 'split_list' : lst_file}
+        return{'amt' : amt, 'split_lst' : lst_tm}
 
-## Function split dir that work on type and custom type version
-def split_dir(listtype):
+## Function split dir that work on time version
+def split_dir(listtime):
     ## initiation progress
     prog_now = 0
-    prog_total = listtype['amt']
+    prog_total = listtime['amt']
     ## Print progress
     print('Progress :\n')
     colorama.init()
-    for key in listtype['split_list']:
-        last_file = listtype['split_list'][key][-1].replace('\\','/')
+    for key in listtime['split_lst']:
+        last_file = listtime['split_lst'][key][-1].replace('\\','/')
         if not opt.dont_write_txt:
             temp_ext_dir = []
-        for ev_file in listtype['split_list'][key]:
+        for ev_file in listtime['split_lst'][key]:
             ev_file = ev_file.replace('\\','/')
-            ## Print progress initiation
+            ## Print progress
             prt_prg(ev_file,prog_now,prog_total)
             ## if parser is set, it will remove the folder structure
             back_path = get_bpath(ev_file,opt.dont_keep_structure,opt.input)
@@ -166,17 +172,17 @@ def split_dir(listtype):
                 temp_ext_dir.append(add_inner(ev_file, target_path))
             if (ev_file == last_file):
                 ## Printing progress for one category of extension
-                print_middle('All file with '+key+' extension already transferred', get_upchar(ev_file))
+                print_middle('All file that '+opt.mode+' on '+key+' already transferred.', get_upchar(ev_file))
                 ## Writing to text files
                 if not opt.dont_write_txt:
                     fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
-                    fp.write('Operation in folder that contain file with extension '+key+' is :')
+                    fp.write('Operation in file that '+opt.mode+' on '+key+' is :')
                     for i in temp_ext_dir:
                         fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
                     fp.close()
             ## Clearing after print progress
             clr_prg(get_upchar(ev_file))
-    ## ending and thank you
+    ## Ending and thank you
     print_end()
 
 ## Main Function
@@ -187,10 +193,10 @@ def split_est_dir():
         os.makedirs(opt.output)
     ## if src_dir isn't directory, folder split doesn't work
     if os.path.isdir (opt.input):
-        listfiletype = list_type(opt.input,0)
-        split_dir(listfiletype)
+        listfiletime = lstdatefl(opt.input,opt.mode,opt.type,0)
+        split_dir(listfiletime)
     else:
-        print('I am sorry, dirknive type only work on directory')
+        print('I am sorry, dirknive time only work on directory')
 
 ## Execute main function
 if __name__ == '__main__':
@@ -204,8 +210,8 @@ if __name__ == '__main__':
 ####### ### ###      ## ###  ##  ### ###  ######  ###      \n\
 ####### ##  ###      ## ###  ##  ##  ##    ####   ######   \n\
 ========================================================== \n\
-------------------- Type Version ------------------------- \n")
+------------------- Time Version ------------------------- \n")
     opt = get_args()
     split_est_dir()
-        
-
+                 
+            
