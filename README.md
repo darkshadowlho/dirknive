@@ -31,11 +31,8 @@ The file will be excluded to folder exclution :joy::joy:
 ```
 python dirknive-time.py -i [source_folder] -o [destination_folder] -t [type of time(day, weekday, month, year)]
 ```
-<<<<<<< HEAD
 This option will divide folder based on the recent time file being modified. For detailed result of the split folder operation you can see at python documentation about [datetime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). :joy::kissing_heart:
-=======
-This option will divide file based on the recent time file being modified. For detailed result of the split operation you can see at python documentation about [datetime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) :joy::kissing_heart:
->>>>>>> 9f99391eb0ac4d40a44df434f9abdb3c096cfcda
+
 ### Added Option
 ```
 -m [modified or created] => created time only work on windows since I am still don't know how to get created time on posix machine. 
