@@ -1,11 +1,68 @@
 import os
-import shutil
 import colorama
 import argparse
 
 ## Function to check path is link or not in windows
 def is_nt_link(pth_dir):
     return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
+
+'''
+=============================
+Printing Function
+=============================
+'''
+
+## Function to get up_char
+def get_upchar(fl):
+    co = os.get_terminal_size().columns
+    stc = 'Transferring '+fl
+    ## Counting the upchar
+    up_char = int(-(-len(stc)//co))
+    '''if (len(stc)%co == 0):
+        up_char += 1'''
+    return up_char
+
+## Print progress transferring
+def prt_prg(fl,g_now,g_tot):
+    stc = 'Transferring '+fl
+    ## Count the progress
+    prog = g_now/g_tot*40
+    print(stc)
+    print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t',flush=True)
+    if os.name == 'nt':
+        print()
+
+## Function to be able print in the middle of progress
+def print_middle(str_test,upchar):
+    co = os.get_terminal_size().columns
+    upchradd = 3 if os.name=='nt' else 1
+    print('\033[A'*(upchar+upchradd))
+    print(' '*co+'\033[A')
+    print(str_test)
+    upchrdwn = -1 if os.name=='nt' else 1
+    print('\n'*(upchar-upchrdwn))
+
+## Function to clear after print progress
+def clr_prg(up_chr):
+    co = os.get_terminal_size().columns
+    initadd = 2 if os.name == 'nt' else 1 
+    print('\033[A'*initadd)
+    upchradd = 2 if os.name=='nt' else 1
+    for j in range(up_chr+upchradd):
+        print(' '*co+'\033[A'*2)
+    print()
+
+## Function to print the ending
+def print_end():
+    print('Operation is done, Thanks for using Dirknive')
+    up_end = 1 if os.name == 'nt' else 0
+    print("[%-40s] %d%%" % ('='*40, 100)+'\033[A'*up_end)
+
+'''
+=============================
+End of print function
+=============================
+'''
 
 ## Function to check size from path
 def chk_size(path):
@@ -16,34 +73,33 @@ def chk_size(path):
         if not is_nt_link(path):
             return os.stat(path).st_size/(1024**2)
 
-## Function to be able print in the middle of process
-def print_middle(str_test,upchar):
-    co = shutil.get_terminal_size().columns
-    print('\033[A'*(upchar+1))
-    print(' '*co+'\033[A',end='')
-    print(str_test)
-    print('\n'*(upchar-1))
+## Function to get back path
+def get_bpath(fl,strct,src):
+    if (strct):
+       back_path = '/'+os.path.basename(fl)
+    else:
+        back_path = fl.replace(src, '').replace('\\','/')
+    return back_path
 
 ## Function to make the list of operation
 def add_inner(src, dest):
     return {'src_path' : src, 'dest_path' : dest}
 
-## Function to make txt in split folder only
-def write_temp(dst_dir, name, list_opr, size_dir):
-    fps = open(dst_dir+'/'+name+'/'+name+'.txt', 'w', encoding='utf-8')
-    fps.write('Operation in '+name+' :')
-    for i in list_opr:
-        fps.write('\n\n'+i['src_path']+' is transfered to '+i['dest_path'])
-    fps.write('\n\nThe Folder Size is '+'%.3f%s' % (size_dir,' MB'))
-    fps.close()
-
 ## Function to copy file if the destination directory isn't exist
-def copy_good(src_path, dst_path, upchar):
+def copy_good(src_path, dst_path):
+    upchar = get_upchar(src_path)
     back_dst_path = dst_path.replace('/'+os.path.basename(dst_path),'')
     if not os.path.isdir(back_dst_path):
         os.makedirs(back_dst_path, exist_ok=True)
     if os.path.isfile(src_path) and not os.path.isfile(dst_path):
-        shutil.copy(src_path,back_dst_path)
+        if os.name == 'nt':
+            src_path = src_path.replace('/','\\')
+            back_dst_path = back_dst_path.replace('/','\\')
+            os.system('%s "%s" "%s"' %('copy /z',src_path,back_dst_path))
+        elif os.name == 'posix':
+            os.system('%s "%s" "%s"' %('cp -p',src_path,back_dst_path))
+        else:
+            print_middle('I am sorry the printing maybe will be messed up', upchar)
     else:
         print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
 
@@ -145,36 +201,24 @@ def split_dir(listtype):
             split_sum = 0
         for ev_file in listtype['split_list'][key]:
             ev_file[1] = ev_file[1].replace('\\','/')
-            ## Progress initiation
-            col = shutil.get_terminal_size().columns
-            sentence = 'Transferring '+ev_file[1]
-            ## Counting the upchar
-            up_char = int(-(-len(sentence)//col))
-            if (len(sentence)%col == 0):
-                up_char += 1
-            ## Count the progress
-            prog = prog_now/prog_total*40
-            print(sentence)
-            print("[%-40s] %.2f%%" % ('='*int(prog), 2.5*prog),end='\t')
+            ## Print Progress
+            prt_prg(ev_file[1],prog_now,prog_total)
             ## if parser is set, it will remove the folder structure
-            if opt.dont_keep_structure:
-                back_path = '/'+os.path.basename(ev_file[1])
-            else :
-                back_path = ev_file[1].replace(opt.input, '').replace('\\','/')
+            back_path = get_bpath(ev_file[1],opt.dont_keep_structure,opt.input)
             ## Determine split folder name exclution or split
             if key[0]=='e':
                 dirsz_name = name_dest_dir+'_exclution'+num_dir % (int(key[1:]))
             else:
                 dirsz_name = name_dest_dir+'_split'+num_dir % (int(key[1:]))
             target_path = opt.output+'/'+dirsz_name+back_path
-            copy_good(ev_file[1], target_path, up_char)
+            copy_good(ev_file[1], target_path)
             prog_now += ev_file[0]
             if not opt.dont_write_txt:
                 temp_ext_dir.append(add_inner(ev_file[1], target_path))
                 split_sum += ev_file[0]
             if (ev_file[1] == last_file):
                 ## Printing progress for one category of extension
-                print_middle('The sum size until '+dirsz_name+' %s %.3f %s [%.2f%%]' % ('is',prog_now,'MB',prog_now/prog_total*100), up_char)
+                print_middle('The sum size until '+dirsz_name+' %s %.3f %s [%.2f%%]' % ('is',prog_now,'MB',prog_now/prog_total*100), get_upchar(ev_file[1]))
                 ## Writing to text files
                 if not opt.dont_write_txt:
                     fp = open(opt.output+'/'+dirsz_name+'/'+dirsz_name+'.txt', 'w', encoding='utf-8')
@@ -184,15 +228,12 @@ def split_dir(listtype):
                     fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',split_sum,'MB'))
                     fp.close()
             ## Clearing after print progress
-            print('\033[A')
-            for j in range(up_char+1):
-                print(' '*col+'\033[A'*3)
-            print()
-    print('Operation is done, Thanks for using Dirknive')
-    print("[%-40s] %d%%\033[A" % ('='*40, 100))
+            clr_prg(get_upchar(ev_file[1]))
+    ## Ending and thank You
+    print_end()
 
 ## Main Function
-def split_est_dir(opt):
+def split_est_dir():
     opt.input = opt.input.replace('\\','/')
     opt.output = opt.output.replace('\\','/')
     if not os.path.isdir(opt.output):
@@ -218,5 +259,5 @@ if __name__ == '__main__':
 ========================================================== \n\
 ------------------- Size Version ------------------------- \n")
     opt = get_args()
-    split_est_dir(opt)
+    split_est_dir()
 
