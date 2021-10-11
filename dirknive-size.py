@@ -2,10 +2,6 @@ import os
 import colorama
 import argparse
 
-## Function to check path is link or not in windows
-def is_nt_link(pth_dir):
-    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
-
 '''
 =============================
 Printing Function
@@ -64,14 +60,15 @@ End of print function
 =============================
 '''
 
-## Function to check size from path
-def chk_size(path):
-    try:
-        with os.scandir(path) as it:
-            return sum(chk_size(entry) for entry in it if not is_nt_link(entry))
-    except NotADirectoryError:
-        if not is_nt_link(path):
-            return os.stat(path).st_size/(1024**2)
+'''
+=============================
+Basic function
+=============================
+'''
+
+## Function to check path is link or not in windows
+def is_nt_link(pth_dir):
+    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
 
 ## Function to get back path
 def get_bpath(fl,strct,src):
@@ -102,6 +99,61 @@ def copy_good(src_path, dst_path):
             print_middle('I am sorry the printing maybe will be messed up', upchar)
     else:
         print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
+
+'''
+=============================
+Random function
+=============================
+'''
+
+## Function to check size from path
+def chk_size(path):
+    try:
+        with os.scandir(path) as it:
+            return sum(chk_size(entry) for entry in it if not is_nt_link(entry))
+    except NotADirectoryError:
+        if not is_nt_link(path):
+            return os.stat(path).st_size/(1024**2)
+
+'''
+#### Just To get name of folder make 3 function :(:(####
+'''
+
+## Function to get the name of splitted folder
+def get_nmdst(nm,src):
+    if (nm):
+        return nm
+    else:
+        return os.path.basename(src)
+
+## Function to get number of char
+def get_numchar(n_char,n_list):
+    if (n_char):
+        return '%0.'+str(n_char)+'d'
+    else:
+        return '%0.'+str(len(str(len(n_list))))+'d'
+
+## Function to determine split or exclution
+def spl_or_exc(str_t):
+    if str_t[0]=='e':
+        return '_exclution'
+    else:
+        return '_split'       
+
+## Function to write txt
+def write_txtsz(dst_pth,dst_nm,opr_lst,splt_sum):
+    fp =  open(dst_pth+'/'+dst_nm+'/'+dst_nm+'.txt', 'w', encoding='utf-8')
+    fp.write('Operation in folder '+dst_nm+' is :')
+    for i in opr_lst:
+        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+    fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',splt_sum,'MB'))
+    fp.close()
+
+'''
+=============================
+Main function
+=============================
+'''
 
 ## Function to read the arguments
 def get_args():
@@ -183,16 +235,6 @@ def split_dir(listtype):
     ## Print progress started
     print('Progress :\n')
     colorama.init()
-    ## Determine the name of the splitted folder
-    if opt.name:
-        name_dest_dir = opt.name
-    else:
-        name_dest_dir = os.path.basename(opt.input)
-    ## Estimate the number of 0 after name of the folder
-    if opt.amount_char:
-        num_dir = '%0.'+str(opt.amount_char)+'d'
-    else:
-        num_dir = '%0.'+str(len(str(len(listtype['split_list']))))+'d'
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1][1].replace('\\','/')
         ## Check option for dont_write_txt
@@ -203,14 +245,10 @@ def split_dir(listtype):
             ev_file[1] = ev_file[1].replace('\\','/')
             ## Print Progress
             prt_prg(ev_file[1],prog_now,prog_total)
-            ## if parser is set, it will remove the folder structure
-            back_path = get_bpath(ev_file[1],opt.dont_keep_structure,opt.input)
             ## Determine split folder name exclution or split
-            if key[0]=='e':
-                dirsz_name = name_dest_dir+'_exclution'+num_dir % (int(key[1:]))
-            else:
-                dirsz_name = name_dest_dir+'_split'+num_dir % (int(key[1:]))
-            target_path = opt.output+'/'+dirsz_name+back_path
+            dirsz_name = get_nmdst(opt.name,opt.input)+spl_or_exc(key)+get_numchar(opt.amount_char,listtype['split_list']) % (int(key[1:]))
+            ## Determine the target path
+            target_path = opt.output+'/'+dirsz_name+get_bpath(ev_file[1],opt.dont_keep_structure,opt.input)
             copy_good(ev_file[1], target_path)
             prog_now += ev_file[0]
             if not opt.dont_write_txt:
@@ -221,12 +259,7 @@ def split_dir(listtype):
                 print_middle('The sum size until '+dirsz_name+' %s %.3f %s [%.2f%%]' % ('is',prog_now,'MB',prog_now/prog_total*100), get_upchar(ev_file[1]))
                 ## Writing to text files
                 if not opt.dont_write_txt:
-                    fp = open(opt.output+'/'+dirsz_name+'/'+dirsz_name+'.txt', 'w', encoding='utf-8')
-                    fp.write('Operation in folder '+dirsz_name+' is :')
-                    for i in temp_ext_dir:
-                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                    fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',split_sum,'MB'))
-                    fp.close()
+                    write_txtsz(opt.output,dirsz_name,temp_ext_dir,split_sum)
             ## Clearing after print progress
             clr_prg(get_upchar(ev_file[1]))
     ## Ending and thank You
