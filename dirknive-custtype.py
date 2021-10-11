@@ -3,10 +3,6 @@ import json
 import colorama
 import argparse
 
-## Function to check path is link or not in windows
-def is_nt_link(pth_dir):
-    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
-
 '''
 =============================
 Printing Function
@@ -65,6 +61,10 @@ End of print function
 =============================
 '''
 
+## Function to check path is link or not in windows
+def is_nt_link(pth_dir):
+    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
+
 ## Function to get back path
 def get_bpath(fl,strct,src):
     if (strct):
@@ -95,6 +95,12 @@ def copy_good(src_path, dst_path):
     else:
         print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
 
+'''
+=============================
+Random function
+=============================
+'''
+
 ## Function to check JSON file
 def is_json(s):
     try:
@@ -113,6 +119,19 @@ def turn_type(ext,json_pth):
         if ext.lower() in ref_type[ctg]:
             reslt = ctg
     return(reslt)
+
+def write_txtctp(dst_pth,dst_nm,opr_lst):
+    fp = open(dst_pth+'/'+dst_nm+'/'+dst_nm+'.txt', 'w', encoding='utf-8')
+    fp.write('Operation in category '+dst_nm+' is :')
+    for i in opr_lst:
+        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+    fp.close()
+
+'''
+=============================
+Main function
+=============================
+'''
 
 ## Function to read the arguments
 def get_args():
@@ -182,9 +201,8 @@ def split_dir(listtype):
             ev_file = ev_file.replace('\\','/')
             ## Print Progress initiation
             prt_prg(ev_file,prog_now,prog_total)
-            ## if parser is set, it will remove the folder structure
-            back_path = get_bpath(ev_file,opt.dont_keep_structure,opt.input)
-            target_path = opt.output+'/'+key+back_path
+            ## Determine target path
+            target_path = opt.output+'/'+key+get_bpath(ev_file,opt.dont_keep_structure,opt.input)
             copy_good(ev_file, target_path)
             prog_now += 1
             if not opt.dont_write_txt:
@@ -194,11 +212,7 @@ def split_dir(listtype):
                 print_middle('All file in '+key+' category already transferred', get_upchar(ev_file))
                 ## Writing to text files
                 if not opt.dont_write_txt:
-                    fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
-                    fp.write('Operation in category '+key+' is :')
-                    for i in temp_ext_dir:
-                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                    fp.close()
+                    write_txtctp(opt.output,key,temp_ext_dir)
             ## Clearing after print progress
             clr_prg(get_upchar(ev_file))
     ## ending and thank you
