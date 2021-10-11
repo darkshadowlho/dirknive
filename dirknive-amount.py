@@ -2,10 +2,6 @@ import os
 import colorama
 import argparse
 
-## Function to check path is link or not in windows
-def is_nt_link(pth_dir):
-    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
-
 '''
 =============================
 Printing Function
@@ -64,6 +60,16 @@ End of print function
 =============================
 '''
 
+'''
+=============================
+Basic function
+=============================
+'''
+
+## Function to check path is link or not in windows
+def is_nt_link(pth_dir):
+    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
+
 ## Function to get back path
 def get_bpath(fl,strct,src):
     if (strct):
@@ -93,6 +99,40 @@ def copy_good(src_path, dst_path):
             print_middle('I am sorry the printing maybe will be messed up', upchar)
     else:
         print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
+
+'''
+=============================
+Random function
+=============================
+'''
+
+## Function to get the name of splitted folder
+def get_nmdst(nm,src):
+    if (nm):
+        return nm
+    else:
+        return os.path.basename(src)
+
+## Function to get number of char
+def get_numchar(n_char,n_list):
+    if (n_char):
+        return '%0.'+str(n_char)+'d'
+    else:
+        return '%0.'+str(len(str(len(n_list))))+'d'
+
+## Function to write txt
+def write_txtamt(dst_pth,dst_nm,opr_lst):
+    fp = open(dst_pth+'/'+dst_nm+'/'+dst_nm+'.txt', 'w', encoding='utf-8')
+    fp.write('Operation in folder '+dst_nm+' is :')
+    for i in opr_lst:
+        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+    fp.close()
+
+'''
+=============================
+Main function
+=============================
+'''
 
 ## Function to read the arguments
 def get_args():
@@ -146,16 +186,6 @@ def split_dir(listtype):
     ## Print progress
     print('Progress :\n')
     colorama.init()
-    ## Determine the name of the splitted folder
-    if opt.name:
-        name_dest_dir = opt.name
-    else:
-        name_dest_dir = os.path.basename(opt.input)
-    ## Estimate the number of 0 after name of the folder
-    if opt.amount_char:
-        num_dir = '%0.'+str(opt.amount_char)+'d'
-    else:
-        num_dir = '%0.'+str(len(str(len(listtype['split_list']))))+'d'
     for key in listtype['split_list']:
         last_file = listtype['split_list'][key][-1].replace('\\','/')
         if not opt.dont_write_txt:
@@ -163,12 +193,11 @@ def split_dir(listtype):
         for ev_file in listtype['split_list'][key]:
             ev_file = ev_file.replace('\\','/')
             ## Print the progress
-            prt_prg(ev_file,prog_now,prog_total)
-            ## Get back path
-            back_path = get_bpath(ev_file,opt.dont_keep_structure,opt.input)
+            prt_prg(ev_file,prog_now,prog_total) 
+            ## Determine name folder
+            numdir_name = get_nmdst(opt.name,opt.input)+get_numchar(opt.amount_char,listtype['split_list']) % (key)
             ## Determine target path
-            numdir_name = name_dest_dir+num_dir % (key)
-            target_path = opt.output+'/'+numdir_name+back_path
+            target_path = opt.output+'/'+numdir_name+get_bpath(ev_file,opt.dont_keep_structure,opt.input)
             copy_good(ev_file, target_path)
             prog_now += 1
             if not opt.dont_write_txt:
@@ -178,11 +207,7 @@ def split_dir(listtype):
                 print_middle('%d %s' % (prog_now,' file already transferred'), get_upchar(ev_file))
                 ## Writing to text files
                 if not opt.dont_write_txt:
-                    fp = open(opt.output+'/'+numdir_name+'/'+numdir_name+'.txt', 'w', encoding='utf-8')
-                    fp.write('Operation in folder '+numdir_name+' is :')
-                    for i in temp_ext_dir:
-                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                    fp.close()
+                    write_txtamt(opt.output,numdir_name,temp_ext_dir)
             ## Clearing after print progress
             clr_prg(get_upchar(ev_file))
     ## Ending and thank you

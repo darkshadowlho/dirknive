@@ -14,7 +14,7 @@ Commit to your repository and merge it in this repository. :wink::wink:
 
 ```
 git add .
-git commit -m "your commit"
+git commit -am "your commit"
 git push origin "your branch right now"
 ```
 

@@ -3,10 +3,6 @@ from datetime import datetime
 import argparse
 import colorama
 
-## Function to check link of folder or files
-def is_nt_link(pth_dir):
-    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
-
 '''
 =============================
 Printing Function
@@ -65,6 +61,16 @@ End of print function
 =============================
 '''
 
+'''
+=============================
+Basic function
+=============================
+'''
+
+## Function to check link of folder or files
+def is_nt_link(pth_dir):
+    return True if (os.path.abspath(pth_dir) != os.path.realpath(pth_dir)) else False
+
 ## Function to get back path
 def get_bpath(fl,strct,src):
     if (strct):
@@ -95,6 +101,12 @@ def copy_good(src_path, dst_path):
     else:
         print_middle('Sorry, the source file is doesnt exist or destination file already copied', upchar)
 
+'''
+=============================
+Random function
+=============================
+'''
+
 ## Function to classify based on time
 def get_date(fl, mod, tm):
     mod_lst = {'modified' : 'st_mtime', 'created' : 'st_ctime'}
@@ -106,6 +118,19 @@ def get_date(fl, mod, tm):
         return time_dt.strftime(tmn)
     else:
         print('Check input again, error in mode or kind of time')
+
+def write_txttm(dst_pth,mod,dst_nm,opr_lst):
+    fp = open(dst_pth+'/'+dst_nm+'/'+dst_nm+'.txt', 'w', encoding='utf-8')
+    fp.write('Operation in file that '+mod+' on '+dst_nm+' is :')
+    for i in opr_lst:
+        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
+    fp.close()
+
+'''
+=============================
+Main function
+=============================
+'''
 
 ## Function to read the arguments
 def get_args():
@@ -163,9 +188,8 @@ def split_dir(listtime):
             ev_file = ev_file.replace('\\','/')
             ## Print progress
             prt_prg(ev_file,prog_now,prog_total)
-            ## if parser is set, it will remove the folder structure
-            back_path = get_bpath(ev_file,opt.dont_keep_structure,opt.input)
-            target_path = opt.output+'/'+key+back_path
+            ## Determine the target path
+            target_path = opt.output+'/'+key+get_bpath(ev_file,opt.dont_keep_structure,opt.input)
             copy_good(ev_file, target_path)
             prog_now += 1
             if not opt.dont_write_txt:
@@ -175,11 +199,7 @@ def split_dir(listtime):
                 print_middle('All file that '+opt.mode+' on '+key+' already transferred.', get_upchar(ev_file))
                 ## Writing to text files
                 if not opt.dont_write_txt:
-                    fp = open(opt.output+'/'+key+'/'+key+'.txt', 'w', encoding='utf-8')
-                    fp.write('Operation in file that '+opt.mode+' on '+key+' is :')
-                    for i in temp_ext_dir:
-                        fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
-                    fp.close()
+                    write_txttm(opt.output,opt.mode,key,temp_ext_dir)
             ## Clearing after print progress
             clr_prg(get_upchar(ev_file))
     ## Ending and thank you
