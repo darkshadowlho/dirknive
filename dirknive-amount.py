@@ -272,5 +272,3 @@ if __name__ == '__main__':
 ------------------- Amount Version ----------------------- \n")
     opt = get_args()
     split_est_dir()
-        
-
