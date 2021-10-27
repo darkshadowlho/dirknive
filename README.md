@@ -12,7 +12,7 @@
 
 ### For `size version`, the command is : :point_down:
 ```
-python dirknive-size.py -i [source_folder] -o [destination_folder] -s [size split folder in MB unit]
+python dirknive-size.py -i [source_folder] -o [destination_folder] -s [size split folder in MB unit] or -ss [series of MB unit]
 ```
 ##### What is good feature ?
  - It will resulted good notes inside splitted or exclution folder with size of the folder. :kissing_heart::kissing_heart:
@@ -21,6 +21,10 @@ python dirknive-size.py -i [source_folder] -o [destination_folder] -s [size spli
 The file will be excluded to folder exclution :joy::joy:
 ##### Added Option
 ```
+-i [source_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-o [destination_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-s [size split folder] => (e.g 5100)
+-ss [series of size split folder] => (e.g "8100,5100")
 -f [name_folder] => name of folder, the default value is base path of source folder 
 -n [num_char_folder] => number of character after name of splitted or exclution folder. Default value is using my formula haha.
 --dont_write_txt => if you dont want to write text file that containing list operation and size of folder.
@@ -29,22 +33,28 @@ The file will be excluded to folder exclution :joy::joy:
 
 ### For `time version`, the command is : :point_down:
 ```
-python dirknive-time.py -i [source_folder] -o [destination_folder] -t [type of time(day, weekday, month, year)]
+python dirknive-time.py -i [source_folder] -o [destination_folder] -t [type of time(e.g day, weekday, month, year)]
 ```
 This option will divide folder based on the recent time file being modified. For detailed result of the split folder operation you can see at python documentation about [datetime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). :joy::kissing_heart:
 ### Added Option
 ```
--m [modified or created] => created time only work on windows since I am still don't know how to get created time on posix machine. 
+-i [source_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-o [destination_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-m [e.g modified or created] => created time only work on windows since I am still don't know how to get created time on posix machine. 
 --dont_write_txt => if you dont want to write text file that containing list operation and size of folder.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
 
 ### For `amount version`, the command is : :point_down:
 ```
-python dirknive-amount.py -i [source_folder] -o [destination_folder] -a [number of file in one folder]
+python dirknive-amount.py -i [source_folder] -o [destination_folder] -a [number of file in one folder] or -as [number series of amount file]
 ```
 ##### Added Option
 ```
+-i [source_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-o [destination_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-a [amount file => (e.g 20)
+-as [series of amount in one folder] => (e.g "9,11,14")
 -f [name_folder] => name of folder, the default value is base path of source folder 
 -n [num_char_folder] => number of character after name folder.
 --dont_write_txt => if you dont want to write text file that containing list operation.
@@ -57,6 +67,8 @@ python dirknive-type.py -i [source_folder] -o [destination_folder]
 ```
 ##### Added Option
 ```
+-i [source_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-o [destination_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
 --dont_write_txt => if you dont want to write text file that containing list operation.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```
@@ -68,7 +80,9 @@ python dirknive-custtype.py -i [source_folder] -o [destination_folder]
 This version will split the folder based on custom arrangement on the json file, you can see at this [example](https://github.com/darkshadowlho/dirknive/blob/main/dirknive-custtype.json) :wink::wink:
 ##### Added Option
 ```
---json [path of your json file] => if you want to rename the json file.
+-i [source_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+-o [destination_folder] => (e.g "home/user/blabla", "E:/dirknive/blabla")
+--json [path of your json file] => if you want to rename the json file (e.g "./dirknive-blabla.json").
 --dont_write_txt => if you dont want to write text file that containing list operation.
 --dont_keep_structure => if you want all file doesn't have root folder.
 ```

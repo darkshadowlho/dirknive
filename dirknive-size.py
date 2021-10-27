@@ -149,6 +149,28 @@ def write_txtsz(dst_pth,dst_nm,opr_lst,splt_sum):
     fp.write('%s %.3f %s' % ('\n\nThe Folder Size is ',splt_sum,'MB'))
     fp.close()
 
+## Function to return the size series or not
+def det_ss(sz_lim, sz_limss):
+    if (sz_lim == None) and (sz_limss == None):
+        print('Add size limit with -s or size limit series with -ss')
+    elif (sz_lim) and (sz_limss):
+        print('Choose between size limit or size limit series dont choose both')
+    else:
+        if (sz_limss):
+            sz_lim = list(map(lambda s: int(s), sz_limss.split(',')))
+        return sz_lim
+
+## Function to return the size series
+def det_szss(num,lst):
+    if type(lst) != list:
+        return lst
+    else:
+        de = num % len(lst)
+        if de == 0:
+            return lst[len(lst)-1]
+        else:
+            return lst[de-1]
+
 '''
 =============================
 Main function
@@ -160,7 +182,8 @@ def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on size limit')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
-    parser.add_argument('--size_limit','-s',type=int,default=5120,help='The size of the split folder in MB unit')
+    parser.add_argument('--size_limit','-s',type=int,default=None,help='The size of the split folder in MB unit')
+    parser.add_argument('--size_series','-ss',type=str,default=None,help='Series of split folder if you doesnt want monotone size limit')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
     parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
@@ -173,24 +196,31 @@ def listszfile(pth_dir,sz_lim,tot_sz,chk_sz,s_n,e_n,np):
     ## initiation for dict and track num of loop function
     lst_sz = {}
     np += 1
+    sz_limn = det_szss(s_n,sz_lim)
     for inner in os.listdir(pth_dir):
         inr_chk = os.path.join(pth_dir, inner)
         ## Condition for file
         if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
             f_sz = round(chk_size(inr_chk),4)
             tot_sz += f_sz
+            ## Change size limit first if the file is big
+            if (chk_sz + f_sz >= sz_limn):
+                s_n += 1
+                sz_limn = det_szss(s_n,sz_lim)
             ## Check if size of file more than size limit
-            if (f_sz >= sz_lim):
+            if (f_sz >= sz_limn):
                 e_ns = '%s%d'%('e',e_n)
                 ## Append to list
                 lst_sz[e_ns] = []
                 lst_sz[e_ns].append([f_sz,inr_chk])
                 e_n += 1
+                ## Turn back the size limit
+                s_n -= 1
+                sz_limn = det_szss(s_n,sz_lim)
             else:
                 ## Check for the first file that make sum more than size limit
-                if (chk_sz + f_sz >= sz_lim):
+                if (chk_sz + f_sz >= sz_limn):
                     chk_sz = f_sz
-                    s_n += 1
                 else:
                     chk_sz += f_sz
                 s_ns = '%s%d'%('s',s_n)
@@ -212,9 +242,10 @@ def listszfile(pth_dir,sz_lim,tot_sz,chk_sz,s_n,e_n,np):
                     for fl_data in subfl_lst[b_fdr]:
                         tot_sz += fl_data[0]
                         ## Checking for first file that make sum more than size limit
-                        if (chk_sz + fl_data[0] >= sz_lim):
+                        if (chk_sz + fl_data[0] >= sz_limn):
                             chk_sz = fl_data[0]
                             s_n += 1
+                            sz_limn = det_szss(s_n,sz_lim)
                         else:
                             chk_sz += fl_data[0]
                         ## You can move up this below code to up because it don't need key again 
@@ -271,12 +302,15 @@ def split_est_dir():
     opt.output = opt.output.replace('\\','/')
     if not os.path.isdir(opt.output):
         os.makedirs(opt.output)
+    sz_lim = det_ss(opt.size_limit,opt.size_series)
     ## if src_dir isn't directory, folder split doesn't work
-    if os.path.isdir (opt.input):
-        listsz_file = listszfile(opt.input,opt.size_limit,0,0,1,1,0)
-        split_dir(listsz_file)
-    else:
+    if not os.path.isdir (opt.input):
         print('I am sorry, dirknive-size only work on directory')
+    ## Check if size limit or size limit series input properly
+    elif sz_lim != None:
+        listsz_file = listszfile(opt.input,sz_lim,0,0,1,1,0)
+        split_dir(listsz_file)
+        
 
 ## Execute main function
 if __name__ == '__main__':
@@ -293,4 +327,3 @@ if __name__ == '__main__':
 ------------------- Size Version ------------------------- \n")
     opt = get_args()
     split_est_dir()
-

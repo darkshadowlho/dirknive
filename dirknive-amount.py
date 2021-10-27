@@ -128,6 +128,34 @@ def write_txtamt(dst_pth,dst_nm,opr_lst):
         fp.write('\n\n'+i['src_path']+' is transferred to '+i['dest_path'])
     fp.close()
 
+## Function to return the amount series or not
+def det_as(amt, amtss):
+    if (amt == None) and (amtss == None):
+        print('Add amount with -a or amount series with -as')
+    elif (amt) and (amtss):
+        print('Choose between amount or size amount series dont choose both')
+    else:
+        if (amtss):
+            amt = list(map(lambda s: int(s), amtss.split(',')))
+        return amt
+
+## Function to return the amount series
+def det_amtss(num,lst):
+    if type(lst) != list:
+        inc = -(-num//lst)
+    else:
+        tot = sum(lst)
+        mult = (-(-num//tot))-1
+        num = num - (mult*tot)
+        sm_lst = [sum([lst[x] for x in range(len(lst)-i-1)]) for i in range(len(lst))]
+        add = 0
+        for i in range(len(sm_lst)):
+            if num > sm_lst[i]:
+                add = len(sm_lst)-i
+                break
+        inc = (mult*len(lst))+add
+    return inc
+
 '''
 =============================
 Main function
@@ -139,7 +167,8 @@ def get_args():
     parser = argparse.ArgumentParser('Part of Dir Knive that have function to divide directory based on amount of file')
     parser.add_argument('--input','-i',type=str,default='.',help='Source directory of the split folder')
     parser.add_argument('--output','-o',type=str,default='.',help='Destination for the split folder')
-    parser.add_argument('--amount_file','-a',type=int,default=10,help='Amount of file in one folder')
+    parser.add_argument('--amount','-a',type=int,default=None,help='Amount of file in one folder')
+    parser.add_argument('--amount_series','-as',type=str,default=None,help='Series of amount file in one folder if you doesnt want monotone amount')
     parser.add_argument('--name','-f',type=str,default=None,help='Name of the split folder')
     parser.add_argument('--amount_char','-n',type=int,default=None,help='Amount of number character that used when renaming folder on the behind')
     parser.add_argument('--dont_write_txt',default=False,action='store_true',help='Dont write txt file contained operation')
@@ -157,7 +186,7 @@ def list_file(path_dir,amt,lim,np):
         if os.path.isfile(inr_chk) and not is_nt_link(inr_chk):
             ## Count the category based on formula
             amt += 1
-            num = int(-(-amt//lim))
+            num = det_amtss(amt,lim)
             ## Append file to list
             if num not in lst_file:
                 lst_file[num] = []
@@ -219,12 +248,14 @@ def split_est_dir():
     opt.output = opt.output.replace('\\','/')
     if not os.path.isdir(opt.output):
         os.makedirs(opt.output)
+    amt = det_as(opt.amount, opt.amount_series)
     ## if src_dir isn't directory, folder split doesn't work
-    if os.path.isdir (opt.input):
-        listam_file = list_file(opt.input,0,opt.amount_file,0)
-        split_dir(listam_file)
-    else:
+    if not os.path.isdir (opt.input):
         print('I am sorry, dirknive amount only work on directory')
+    elif amt != None:
+        listam_file = list_file(opt.input,0,amt,0)
+        split_dir(listam_file)
+        
 
 ## Execute main function
 if __name__ == '__main__':
